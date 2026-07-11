@@ -1,0 +1,173 @@
+package com.svcntrl.core;
+
+import com.svcntrl.data.Project;
+import com.svcntrl.data.ProjectManager;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.math.BlockPos;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class PendingCreateManager {
+
+    private static final PendingCreateManager INSTANCE = new PendingCreateManager();
+
+    private final Map<UUID, PendingCreate> pending = new ConcurrentHashMap<>();
+
+    private PendingCreateManager() {}
+
+    public static PendingCreateManager getInstance() {
+        return INSTANCE;
+    }
+
+    public boolean hasPending(UUID uuid) {
+        return pending.containsKey(uuid);
+    }
+
+    public void tick(net.minecraft.server.MinecraftServer server) {
+        long now = System.currentTimeMillis();
+        pending.entrySet().removeIf(entry -> {
+            if (now > entry.getValue().expiryTime) {
+                ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());
+                if (player != null) {
+                    player.sendMessage(Text.literal("Project creation for '" + entry.getValue().projectName + "' timed out.").formatted(Formatting.RED), false);
+                }
+                return true;
+            }
+            return false;
+        });
+    }
+
+    public void startCreation(ServerPlayerEntity player, String projectName) {
+        if (ProjectManager.getInstance().getProject(projectName) != null) {
+            player.sendMessage(Text.literal("A project with this name already exists.").formatted(Formatting.RED), false);
+            return;
+        }
+
+        pending.put(player.getUuid(), new PendingCreate(projectName, System.currentTimeMillis() + 60_000L));
+        player.sendMessage(Text.literal("Started creation of project '" + projectName + "'.\n")
+                .formatted(Formatting.GREEN)
+                .append(Text.literal("Left/Right-click blocks to set Pos1/Pos2 with the wand item.\n")
+                        .formatted(Formatting.YELLOW))
+                .append(Text.literal("(You have 1 minute before this cancels).")
+                        .formatted(Formatting.GRAY)), false);
+    }
+
+    public boolean handleLeftClick(ServerPlayerEntity player, BlockPos pos) {
+        PendingCreate state = pending.get(player.getUuid());
+        if (state == null) return false;
+
+        if (System.currentTimeMillis() > state.expiryTime) {
+            pending.remove(player.getUuid());
+            player.sendMessage(Text.literal("Project creation timed out.").formatted(Formatting.RED), false);
+            return false;
+        }
+
+        if (state.dimension != null && !state.dimension.equals(player.getWorld().getRegistryKey().getValue().toString())) {
+            state.pos2 = null; // Reset pos2 if dimension changed
+        }
+        state.pos1 = pos;
+        state.dimension = player.getWorld().getRegistryKey().getValue().toString();
+        player.sendMessage(Text.literal("Pos1 set to " + pos.toShortString() + " in " + state.dimension).formatted(Formatting.GREEN), false);
+        checkCompletion(player, state);
+        return true;
+    }
+
+    public boolean handleRightClick(ServerPlayerEntity player, BlockPos pos) {
+        PendingCreate state = pending.get(player.getUuid());
+        if (state == null) return false;
+
+        if (System.currentTimeMillis() > state.expiryTime) {
+            pending.remove(player.getUuid());
+            player.sendMessage(Text.literal("Project creation timed out.").formatted(Formatting.RED), false);
+            return false;
+        }
+
+        if (state.pos1 != null && !player.getWorld().getRegistryKey().getValue().toString().equals(state.dimension)) {
+            player.sendMessage(Text.literal("Pos2 must be in the same dimension as Pos1 (" + state.dimension + ")!").formatted(Formatting.RED), false);
+            return false;
+        }
+
+        state.pos2 = pos;
+        player.sendMessage(Text.literal("Pos2 set to " + pos.toShortString()).formatted(Formatting.GREEN), false);
+        checkCompletion(player, state);
+        return true;
+    }
+
+    private void checkCompletion(ServerPlayerEntity player, PendingCreate state) {
+        if (state.pos1 != null && state.pos2 != null) {
+            long dx = Math.abs(state.pos1.getX() - state.pos2.getX()) + 1;
+            long dy = Math.abs(state.pos1.getY() - state.pos2.getY()) + 1;
+            long dz = Math.abs(state.pos1.getZ() - state.pos2.getZ()) + 1;
+            long volume = dx * dy * dz;
+            int maxVol = com.svcntrl.config.SvcntrlConfig.getInstance().maxRegionVolume;
+            if (volume > maxVol) {
+                player.sendMessage(Text.literal("Project area too large! Maximum volume is " + maxVol + " blocks, but you selected " + volume + " blocks.")
+                        .formatted(Formatting.RED), false);
+                return;
+            }
+
+            String dim = player.getWorld().getRegistryKey().getValue().toString();
+            int minX = Math.min(state.pos1.getX(), state.pos2.getX());
+            int maxX = Math.max(state.pos1.getX(), state.pos2.getX());
+            int minY = Math.min(state.pos1.getY(), state.pos2.getY());
+            int maxY = Math.max(state.pos1.getY(), state.pos2.getY());
+            int minZ = Math.min(state.pos1.getZ(), state.pos2.getZ());
+            int maxZ = Math.max(state.pos1.getZ(), state.pos2.getZ());
+
+            for (Project existing : ProjectManager.getInstance().getProjects()) {
+                if (existing.getWorldId().equals(dim)) {
+                    BlockPos emin = existing.getMin();
+                    BlockPos emax = existing.getMax();
+                    boolean intersectsX = minX <= emax.getX() && maxX >= emin.getX();
+                    boolean intersectsY = minY <= emax.getY() && maxY >= emin.getY();
+                    boolean intersectsZ = minZ <= emax.getZ() && maxZ >= emin.getZ();
+                    if (intersectsX && intersectsY && intersectsZ) {
+                        player.sendMessage(Text.literal("Project area intersects with existing project: " + existing.getName()).formatted(Formatting.RED), false);
+                        return;
+                    }
+                }
+            }
+
+            pending.remove(player.getUuid());
+
+            Project project = new Project(
+                    state.projectName,
+                    player.getUuid(),
+                    player.getName().getString(),
+                    state.pos1,
+                    state.pos2,
+                    player.getWorld().getRegistryKey().getValue().toString()
+            );
+
+            if (ProjectManager.getInstance().createProject(project)) {
+                ProjectManager.getInstance().setActiveProject(player.getUuid(), project.getName());
+                player.sendMessage(Text.literal("Project '" + state.projectName + "' created successfully and set as active!")
+                        .formatted(Formatting.GREEN), false);
+            } else {
+                player.sendMessage(Text.literal("Failed to create project. Name already exists.")
+                        .formatted(Formatting.RED), false);
+            }
+        }
+    }
+
+    public void removePlayer(UUID uuid) {
+        pending.remove(uuid);
+    }
+
+    private static class PendingCreate {
+        String projectName;
+        long expiryTime;
+        BlockPos pos1;
+        BlockPos pos2;
+        String dimension;
+
+        PendingCreate(String projectName, long expiryTime) {
+            this.projectName = projectName;
+            this.expiryTime = expiryTime;
+        }
+    }
+}

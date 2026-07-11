@@ -1,0 +1,27 @@
+# gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# runtime
+run/
+
+# java
+*.class
+
+# idea
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# vscode
+.vscode/
+
+# macos
+.DS_Store
+
+# fabric
+remappedSrc/
+bin/

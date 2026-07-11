@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "svcntrl",
+  "version": "${version}",
+  "name": "svcntrl",
+  "description": "Server-side version control for Minecraft builds. Save, preview, and restore snapshots of your projects.",
+  "authors": [
+    "florentem"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.svcntrl.SvcntrlMod"
+    ]
+  },
+  "mixins": [
+    "svcntrl.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.8",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
