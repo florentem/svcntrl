@@ -978,7 +978,7 @@ public class SvcntrlCommands {
             int autoId = project.addAutoSnapshot(currentBranch, "Auto-save before restore to " + targetBranch + ":" + id, player.getUuid(), player.getName().getString());
             source.sendFeedback(() -> Text.literal("Creating auto-save before restore...").formatted(Formatting.YELLOW), false);
             AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", autoId, () -> {
-                project.trimAutoSnapshots(currentBranch);
+                project.trimAutoSnapshots(currentBranch, (category.equals("auto") && targetBranch.equals(currentBranch)) ? new int[]{id} : new int[0]);
                 boolean success = AreaSerializer.restoreArea(player, world, project, targetBranch, category, id);
                 if (success) {
                     ProjectManager.getInstance().saveProject(project);
@@ -1016,7 +1016,7 @@ public class SvcntrlCommands {
             source.sendFeedback(() -> Text.literal("Creating auto-save before patch restore...").formatted(Formatting.YELLOW), false);
             
             AreaSerializer.saveAreaAsync(player, world, project, branchName, "auto", autoId, () -> {
-                project.trimAutoSnapshots(branchName);
+                project.trimAutoSnapshots(branchName, category.equals("auto") ? new int[]{targetId, baseId} : new int[0]);
                 boolean success = AreaSerializer.restorePatchArea(player, world, project, branchName, category, targetId, branchName, category, baseId);
                 if (success) {
                     source.sendFeedback(() -> Text.literal("Applying patch (Entities fully replaced)...").formatted(Formatting.GREEN), false);
@@ -1060,7 +1060,7 @@ public class SvcntrlCommands {
             source.sendFeedback(() -> Text.literal("Creating auto-save before cross patch...").formatted(Formatting.YELLOW), false);
             
             AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", autoId, () -> {
-                project.trimAutoSnapshots(currentBranch);
+                project.trimAutoSnapshots(currentBranch, category.equals("auto") ? new int[]{targetBranch.equals(currentBranch) ? targetId : -1, baseBranch.equals(currentBranch) ? baseId : -1} : new int[0]);
                 boolean success = AreaSerializer.restorePatchArea(player, world, project, targetBranch, category, targetId, baseBranch, category, baseId);
                 if (success) {
                     source.sendFeedback(() -> Text.literal("Cross patch applied successfully! (Entities fully replaced)").formatted(Formatting.GREEN), false);

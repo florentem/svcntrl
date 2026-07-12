@@ -94,16 +94,32 @@ public class Project {
         return id;
     }
 
-    public void trimAutoSnapshots(String branchName) {
+    public void trimAutoSnapshots(String branchName, int... excludeIds) {
         Branch branch = getOrCreateBranch(branchName);
         while (branch.autoSnapshots.size() > 10) {
-            SnapshotMeta removed = ((LinkedList<SnapshotMeta>)branch.autoSnapshots).poll();
-            if (removed == null) break;
+            // Find the oldest snapshot that is NOT in the excluded list
+            SnapshotMeta toRemove = null;
+            for (SnapshotMeta meta : branch.autoSnapshots) {
+                boolean excluded = false;
+                for (int ex : excludeIds) {
+                    if (meta.getId() == ex) {
+                        excluded = true;
+                        break;
+                    }
+                }
+                if (!excluded) {
+                    toRemove = meta;
+                    break;
+                }
+            }
+            if (toRemove == null) break;
+            
+            branch.autoSnapshots.remove(toRemove);
             try {
-                java.nio.file.Path snapshotFile = ProjectManager.getInstance().getSnapshotPath(this, branchName, "auto", removed.getId());
+                java.nio.file.Path snapshotFile = ProjectManager.getInstance().getSnapshotPath(this, branchName, "auto", toRemove.getId());
                 java.nio.file.Files.deleteIfExists(snapshotFile);
             } catch (Exception e) {
-                com.svcntrl.SvcntrlMod.LOGGER.error("Failed to delete old auto snapshot file: " + removed.getId(), e);
+                com.svcntrl.SvcntrlMod.LOGGER.error("Failed to delete old auto snapshot file: " + toRemove.getId(), e);
             }
         }
     }
