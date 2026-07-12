@@ -53,9 +53,22 @@ public class ProjectManager {
     }
     
     public void setProjectLocked(Project project, boolean locked) {
-        project.setLocked(locked);
-        if (locked) lockedProjects.add(project);
-        else lockedProjects.remove(project);
+        if (locked) {
+            lockedProjects.add(project);
+            project.setLocked(true);
+        } else {
+            lockedProjects.remove(project);
+            project.setLocked(false);
+        }
+    }
+
+    public boolean isOverlappingLocked(Project project) {
+        for (Project locked : lockedProjects) {
+            if (locked != project && locked.intersects(project)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean createProject(Project project) {

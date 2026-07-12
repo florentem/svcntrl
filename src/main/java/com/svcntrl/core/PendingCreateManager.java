@@ -118,19 +118,7 @@ public class PendingCreateManager {
             int minZ = Math.min(state.pos1.getZ(), state.pos2.getZ());
             int maxZ = Math.max(state.pos1.getZ(), state.pos2.getZ());
 
-            for (Project existing : ProjectManager.getInstance().getProjects()) {
-                if (existing.getWorldId().equals(dim)) {
-                    BlockPos emin = existing.getMin();
-                    BlockPos emax = existing.getMax();
-                    boolean intersectsX = minX <= emax.getX() && maxX >= emin.getX();
-                    boolean intersectsY = minY <= emax.getY() && maxY >= emin.getY();
-                    boolean intersectsZ = minZ <= emax.getZ() && maxZ >= emin.getZ();
-                    if (intersectsX && intersectsY && intersectsZ) {
-                        player.sendMessage(Text.literal("Project area intersects with existing project: " + existing.getName()).formatted(Formatting.RED), false);
-                        return;
-                    }
-                }
-            }
+            // Intersections are now allowed
 
             pending.remove(player.getUuid());
 

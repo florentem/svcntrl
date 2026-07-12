@@ -22,7 +22,7 @@ public class Project {
     private transient volatile boolean locked = false;
 
     public boolean isLocked() {
-        return locked;
+        return locked || ProjectManager.getInstance().isOverlappingLocked(this);
     }
 
     public void setLocked(boolean locked) {
@@ -156,6 +156,13 @@ public class Project {
         return pos.getX() >= corner1.getX() && pos.getX() <= corner2.getX()
             && pos.getY() >= corner1.getY() && pos.getY() <= corner2.getY()
             && pos.getZ() >= corner1.getZ() && pos.getZ() <= corner2.getZ();
+    }
+
+    public boolean intersects(Project other) {
+        if (!this.worldId.equals(other.worldId)) return false;
+        return this.corner1.getX() <= other.corner2.getX() && this.corner2.getX() >= other.corner1.getX() &&
+               this.corner1.getY() <= other.corner2.getY() && this.corner2.getY() >= other.corner1.getY() &&
+               this.corner1.getZ() <= other.corner2.getZ() && this.corner2.getZ() >= other.corner1.getZ();
     }
 
     public String getName() { return name; }
