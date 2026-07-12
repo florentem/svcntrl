@@ -62,7 +62,7 @@ public class AreaSerializer {
      * 3. Restore block entity data for the placed blocks.
      * 4. Spawn entities from the snapshot.
      */
-    public static boolean restoreArea(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, Project project, String branchName, String category, int snapshotId) {
+    public static boolean restoreArea(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, Project project, String branchName, String category, int snapshotId, boolean excludeIntersections) {
         Path filePath = ProjectManager.getInstance().getSnapshotPath(project, branchName, category, snapshotId);
         if (!Files.exists(filePath)) {
             SvcntrlMod.LOGGER.error("[svcntrl] Snapshot file not found: {}", filePath);
@@ -80,7 +80,7 @@ public class AreaSerializer {
 
                         NbtList entities = root.getListOrEmpty("Entities");
 
-                        TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, root, entities, project));
+                        TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, root, entities, project).setExcludeIntersections(excludeIntersections));
                         SvcntrlMod.LOGGER.info("[svcntrl] Scheduled restore task for project '{}' (snapshot {} {})", project.getName(), snapshotId, category);
                     } catch (Throwable t) {
                         SvcntrlMod.LOGGER.error("[svcntrl] Failed to schedule restore task", t);
@@ -99,7 +99,7 @@ public class AreaSerializer {
         return true;
     }
 
-    public static boolean restorePatchArea(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, Project project, String targetBranch, String targetCategory, int targetId, String baseBranch, String baseCategory, int baseId) {
+    public static boolean restorePatchArea(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, Project project, String targetBranch, String targetCategory, int targetId, String baseBranch, String baseCategory, int baseId, boolean excludeIntersections) {
         Path targetPath = ProjectManager.getInstance().getSnapshotPath(project, targetBranch, targetCategory, targetId);
         Path basePath = ProjectManager.getInstance().getSnapshotPath(project, baseBranch, baseCategory, baseId);
 
@@ -180,7 +180,7 @@ public class AreaSerializer {
                 world.getServer().execute(() -> {
                     try {
                         NbtList emptyEntities = new NbtList();
-                        TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, targetRoot, emptyEntities, project, patchMask, patchEntities));
+                        TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, targetRoot, emptyEntities, project, patchMask, patchEntities).setExcludeIntersections(excludeIntersections));
                         SvcntrlMod.LOGGER.info("[svcntrl] Scheduled patch task for project '{}' (target {} vs base {})", project.getName(), targetId, baseId);
                     } catch (Throwable t) {
                         SvcntrlMod.LOGGER.error("[svcntrl] Failed to schedule patch task", t);
@@ -215,6 +215,8 @@ public class AreaSerializer {
         private final Project project;
         private final boolean[] patchMask;
         private final NbtList patchEntities;
+        
+        private java.util.List<Project> overlappingProjects = null;
         
         private int currentIndex = 0;
         private int phase = -1; // -1 = clear entities, 0 = set blocks, 1 = block entities, 2 = spawn entities
@@ -267,6 +269,18 @@ public class AreaSerializer {
             }
         }
 
+        public RestoreTask setExcludeIntersections(boolean exclude) {
+            if (exclude) {
+                this.overlappingProjects = new java.util.ArrayList<>();
+                for (Project p : ProjectManager.getInstance().getProjects()) {
+                    if (p != project && p.getWorldId().equals(project.getWorldId()) && p.intersects(project)) {
+                        this.overlappingProjects.add(p);
+                    }
+                }
+            }
+            return this;
+        }
+
         @Override
         public boolean tick(long maxTimeNs) {
             try {
@@ -297,7 +311,15 @@ public class AreaSerializer {
                     Box chunkBox = new Box(chunkX * 16, min.getY(), chunkZ * 16, chunkX * 16 + 16, project.getMax().getY() + 1, chunkZ * 16 + 16);
                     Box intersect = chunkBox.intersection(new Box(min.getX(), min.getY(), min.getZ(), project.getMax().getX() + 1, project.getMax().getY() + 1, project.getMax().getZ() + 1));
                     
-                    java.util.List<net.minecraft.entity.Entity> existingEntities = world.getOtherEntities(null, intersect, e -> !(e instanceof net.minecraft.entity.player.PlayerEntity));
+                    java.util.List<net.minecraft.entity.Entity> existingEntities = world.getOtherEntities(null, intersect, e -> {
+                        if (e instanceof net.minecraft.entity.player.PlayerEntity) return false;
+                        if (overlappingProjects != null) {
+                            for (Project p : overlappingProjects) {
+                                if (p.contains(e.getBlockPos())) return false;
+                            }
+                        }
+                        return true;
+                    });
                     for (net.minecraft.entity.Entity e : existingEntities) {
                         e.discard();
                     }
@@ -335,6 +357,18 @@ public class AreaSerializer {
                                     min.getY() + blockNbt.getInt("Y", 0), 
                                     min.getZ() + blockNbt.getInt("Z", 0));
                         
+                        if (overlappingProjects != null) {
+                            boolean skip = false;
+                            for (Project p : overlappingProjects) {
+                                if (p.contains(mutable)) { skip = true; break; }
+                            }
+                            if (skip) {
+                                currentIndex++; ops++;
+                                if ((ops & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
+                                continue;
+                            }
+                        }
+                        
                         String blockIdStr = blockNbt.getString("BlockId", "minecraft:air");
                         Block block = Registries.BLOCK.get(Identifier.of(blockIdStr));
                         BlockState state = block.getDefaultState();
@@ -368,6 +402,18 @@ public class AreaSerializer {
                         }
 
                         mutable.set(min.getX() + rx, min.getY() + ry, min.getZ() + rz);
+
+                        if (overlappingProjects != null) {
+                            boolean skip = false;
+                            for (Project p : overlappingProjects) {
+                                if (p.contains(mutable)) { skip = true; break; }
+                            }
+                            if (skip) {
+                                currentIndex++; ops++;
+                                if ((ops & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
+                                continue;
+                            }
+                        }
                         int pIndex = blockData[currentIndex];
                         BlockState state = (pIndex >= 0 && pIndex < palette.length) ? palette[pIndex] : Blocks.AIR.getDefaultState();
                         
@@ -433,6 +479,18 @@ public class AreaSerializer {
                                     min.getY() + blockNbt.getInt("Y", 0), 
                                     min.getZ() + blockNbt.getInt("Z", 0));
                                     
+                        if (overlappingProjects != null) {
+                            boolean skip = false;
+                            for (Project p : overlappingProjects) {
+                                if (p.contains(mutable)) { skip = true; break; }
+                            }
+                            if (skip) {
+                                currentIndex++; ops++;
+                                if ((ops & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
+                                continue;
+                            }
+                        }
+                                    
                         NbtCompound beData = blocks != null ? blockNbt.getCompoundOrEmpty("BlockEntityData") : blockNbt.getCompoundOrEmpty("Data");
                         BlockEntity be = BlockEntity.createFromNbt(mutable, world.getBlockState(mutable), beData, world.getRegistryManager());
                         if (be != null) {
@@ -493,6 +551,23 @@ public class AreaSerializer {
                     posList.add(net.minecraft.nbt.NbtDouble.of(absY));
                     posList.add(net.minecraft.nbt.NbtDouble.of(absZ));
                     entityNbt.put("Pos", posList);
+
+                    if (overlappingProjects != null) {
+                        BlockPos ePos = new BlockPos(
+                                (int) Math.floor(absX),
+                                (int) Math.floor(absY),
+                                (int) Math.floor(absZ)
+                        );
+                        boolean skip = false;
+                        for (Project p : overlappingProjects) {
+                            if (p.contains(ePos)) { skip = true; break; }
+                        }
+                        if (skip) {
+                            currentIndex++; ops++;
+                            if ((ops & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
+                            continue;
+                        }
+                    }
 
                     EntityType.loadEntityWithPassengers(entityNbt, world, SpawnReason.STRUCTURE, (entity) -> {
                         entity.setUuid(java.util.UUID.randomUUID());

@@ -139,10 +139,19 @@ public class SvcntrlCommands {
                             .suggests((ctx, builder) -> suggestSnapshotIds(ctx, builder, "manual"))
                             .then(argument("base_id", IntegerArgumentType.integer(1))
                                 .suggests((ctx, builder) -> suggestSnapshotIds(ctx, builder, "manual"))
-                                .executes(ctx -> executeRestorePatch(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), false))
-                                .then(literal("--nosave")
-                                    .executes(ctx -> executeRestorePatch(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), true))
-                                )
+                                .executes(ctx -> executeRestorePatch(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), false, false))
+                                        .then(literal("--nosave")
+                                            .executes(ctx -> executeRestorePatch(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), true, false))
+                                            .then(literal("--exclude-intersections")
+                                                .executes(ctx -> executeRestorePatch(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), true, true))
+                                            )
+                                        )
+                                        .then(literal("--exclude-intersections")
+                                            .executes(ctx -> executeRestorePatch(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), false, true))
+                                            .then(literal("--nosave")
+                                                .executes(ctx -> executeRestorePatch(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), true, true))
+                                            )
+                                        )
                             )
                         )
                         .then(literal("auto")
@@ -150,10 +159,19 @@ public class SvcntrlCommands {
                                 .suggests((ctx, builder) -> suggestSnapshotIds(ctx, builder, "auto"))
                                 .then(argument("base_id", IntegerArgumentType.integer(1))
                                     .suggests((ctx, builder) -> suggestSnapshotIds(ctx, builder, "auto"))
-                                    .executes(ctx -> executeRestorePatch(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), false))
-                                    .then(literal("--nosave")
-                                        .executes(ctx -> executeRestorePatch(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), true))
-                                    )
+                                    .executes(ctx -> executeRestorePatch(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), false, false))
+                                        .then(literal("--nosave")
+                                            .executes(ctx -> executeRestorePatch(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), true, false))
+                                            .then(literal("--exclude-intersections")
+                                                .executes(ctx -> executeRestorePatch(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), true, true))
+                                            )
+                                        )
+                                        .then(literal("--exclude-intersections")
+                                            .executes(ctx -> executeRestorePatch(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), false, true))
+                                            .then(literal("--nosave")
+                                                .executes(ctx -> executeRestorePatch(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), true, true))
+                                            )
+                                        )
                                 )
                             )
                         )
@@ -162,10 +180,19 @@ public class SvcntrlCommands {
                                 .suggests((ctx, builder) -> suggestSnapshotIds(ctx, builder, "manual"))
                                 .then(argument("base_id", IntegerArgumentType.integer(1))
                                     .suggests((ctx, builder) -> suggestSnapshotIds(ctx, builder, "manual"))
-                                    .executes(ctx -> executeRestorePatch(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), false))
-                                    .then(literal("--nosave")
-                                        .executes(ctx -> executeRestorePatch(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), true))
-                                    )
+                                    .executes(ctx -> executeRestorePatch(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), false, false))
+                                        .then(literal("--nosave")
+                                            .executes(ctx -> executeRestorePatch(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), true, false))
+                                            .then(literal("--exclude-intersections")
+                                                .executes(ctx -> executeRestorePatch(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), true, true))
+                                            )
+                                        )
+                                        .then(literal("--exclude-intersections")
+                                            .executes(ctx -> executeRestorePatch(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), false, true))
+                                            .then(literal("--nosave")
+                                                .executes(ctx -> executeRestorePatch(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "target_id"), IntegerArgumentType.getInteger(ctx, "base_id"), true, true))
+                                            )
+                                        )
                                 )
                             )
                         )
@@ -178,10 +205,19 @@ public class SvcntrlCommands {
                                         .suggests((ctx, builder) -> suggestBranches(ctx, builder))
                                         .then(argument("base_id", IntegerArgumentType.integer(1))
                                             .suggests((ctx, builder) -> suggestCrossSnapshotIds(ctx, builder, "manual", "base_branch"))
-                                            .executes(ctx -> executeRestorePatchCross(ctx.getSource(), "manual", StringArgumentType.getString(ctx, "target_branch"), IntegerArgumentType.getInteger(ctx, "target_id"), StringArgumentType.getString(ctx, "base_branch"), IntegerArgumentType.getInteger(ctx, "base_id"), false))
-                                            .then(literal("--nosave")
-                                                .executes(ctx -> executeRestorePatchCross(ctx.getSource(), "manual", StringArgumentType.getString(ctx, "target_branch"), IntegerArgumentType.getInteger(ctx, "target_id"), StringArgumentType.getString(ctx, "base_branch"), IntegerArgumentType.getInteger(ctx, "base_id"), true))
+                                            .executes(ctx -> executeRestorePatchCross(ctx.getSource(), "manual", StringArgumentType.getString(ctx, "target_branch"), IntegerArgumentType.getInteger(ctx, "target_id"), StringArgumentType.getString(ctx, "base_branch"), IntegerArgumentType.getInteger(ctx, "base_id"), false, false))
+                                        .then(literal("--nosave")
+                                            .executes(ctx -> executeRestorePatchCross(ctx.getSource(), "manual", StringArgumentType.getString(ctx, "target_branch"), IntegerArgumentType.getInteger(ctx, "target_id"), StringArgumentType.getString(ctx, "base_branch"), IntegerArgumentType.getInteger(ctx, "base_id"), true, false))
+                                            .then(literal("--exclude-intersections")
+                                                .executes(ctx -> executeRestorePatchCross(ctx.getSource(), "manual", StringArgumentType.getString(ctx, "target_branch"), IntegerArgumentType.getInteger(ctx, "target_id"), StringArgumentType.getString(ctx, "base_branch"), IntegerArgumentType.getInteger(ctx, "base_id"), true, true))
                                             )
+                                        )
+                                        .then(literal("--exclude-intersections")
+                                            .executes(ctx -> executeRestorePatchCross(ctx.getSource(), "manual", StringArgumentType.getString(ctx, "target_branch"), IntegerArgumentType.getInteger(ctx, "target_id"), StringArgumentType.getString(ctx, "base_branch"), IntegerArgumentType.getInteger(ctx, "base_id"), false, true))
+                                            .then(literal("--nosave")
+                                                .executes(ctx -> executeRestorePatchCross(ctx.getSource(), "manual", StringArgumentType.getString(ctx, "target_branch"), IntegerArgumentType.getInteger(ctx, "target_id"), StringArgumentType.getString(ctx, "base_branch"), IntegerArgumentType.getInteger(ctx, "base_id"), true, true))
+                                            )
+                                        )
                                         )
                                     )
                                 )
@@ -190,27 +226,54 @@ public class SvcntrlCommands {
                     )
                     .then(argument("id", IntegerArgumentType.integer(1))
                         .suggests((ctx, builder) -> suggestSnapshotIds(ctx, builder, "manual"))
-                        .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), null, false))
-                        .then(literal("--nosave")
-                            .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), null, true))
-                        )
+                        .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), null, false, false))
+                                        .then(literal("--nosave")
+                                            .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), null, true, false))
+                                            .then(literal("--exclude-intersections")
+                                                .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), null, true, true))
+                                            )
+                                        )
+                                        .then(literal("--exclude-intersections")
+                                            .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), null, false, true))
+                                            .then(literal("--nosave")
+                                                .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), null, true, true))
+                                            )
+                                        )
                     )
                     .then(literal("auto")
                         .then(argument("id", IntegerArgumentType.integer(1))
                             .suggests((ctx, builder) -> suggestSnapshotIds(ctx, builder, "auto"))
-                            .executes(ctx -> executeRestore(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "id"), null, false))
-                            .then(literal("--nosave")
-                                .executes(ctx -> executeRestore(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "id"), null, true))
-                            )
+                            .executes(ctx -> executeRestore(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "id"), null, false, false))
+                                        .then(literal("--nosave")
+                                            .executes(ctx -> executeRestore(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "id"), null, true, false))
+                                            .then(literal("--exclude-intersections")
+                                                .executes(ctx -> executeRestore(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "id"), null, true, true))
+                                            )
+                                        )
+                                        .then(literal("--exclude-intersections")
+                                            .executes(ctx -> executeRestore(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "id"), null, false, true))
+                                            .then(literal("--nosave")
+                                                .executes(ctx -> executeRestore(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "id"), null, true, true))
+                                            )
+                                        )
                         )
                     )
                     .then(literal("manual")
                         .then(argument("id", IntegerArgumentType.integer(1))
                             .suggests((ctx, builder) -> suggestSnapshotIds(ctx, builder, "manual"))
-                            .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), null, false))
-                            .then(literal("--nosave")
-                                .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), null, true))
-                            )
+                            .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), null, false, false))
+                                        .then(literal("--nosave")
+                                            .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), null, true, false))
+                                            .then(literal("--exclude-intersections")
+                                                .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), null, true, true))
+                                            )
+                                        )
+                                        .then(literal("--exclude-intersections")
+                                            .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), null, false, true))
+                                            .then(literal("--nosave")
+                                                .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), null, true, true))
+                                            )
+                                        )
                         )
                     )
                     .then(literal("cross")
@@ -218,27 +281,54 @@ public class SvcntrlCommands {
                             .suggests((ctx, builder) -> suggestBranches(ctx, builder))
                             .then(argument("id", IntegerArgumentType.integer(1))
                                 .suggests((ctx, builder) -> suggestCrossSnapshotIds(ctx, builder, "manual", "branch"))
-                                .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), false))
-                                .then(literal("--nosave")
-                                    .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), true))
-                                )
+                                .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), false, false))
+                                        .then(literal("--nosave")
+                                            .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), true, false))
+                                            .then(literal("--exclude-intersections")
+                                                .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), true, true))
+                                            )
+                                        )
+                                        .then(literal("--exclude-intersections")
+                                            .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), false, true))
+                                            .then(literal("--nosave")
+                                                .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), true, true))
+                                            )
+                                        )
                             )
                             .then(literal("auto")
                                 .then(argument("id", IntegerArgumentType.integer(1))
                                     .suggests((ctx, builder) -> suggestCrossSnapshotIds(ctx, builder, "auto", "branch"))
-                                    .executes(ctx -> executeRestore(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), false))
-                                    .then(literal("--nosave")
-                                        .executes(ctx -> executeRestore(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), true))
-                                    )
+                                    .executes(ctx -> executeRestore(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), false, false))
+                                        .then(literal("--nosave")
+                                            .executes(ctx -> executeRestore(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), true, false))
+                                            .then(literal("--exclude-intersections")
+                                                .executes(ctx -> executeRestore(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), true, true))
+                                            )
+                                        )
+                                        .then(literal("--exclude-intersections")
+                                            .executes(ctx -> executeRestore(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), false, true))
+                                            .then(literal("--nosave")
+                                                .executes(ctx -> executeRestore(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), true, true))
+                                            )
+                                        )
                                 )
                             )
                             .then(literal("manual")
                                 .then(argument("id", IntegerArgumentType.integer(1))
                                     .suggests((ctx, builder) -> suggestCrossSnapshotIds(ctx, builder, "manual", "branch"))
-                                    .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), false))
-                                    .then(literal("--nosave")
-                                        .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), true))
-                                    )
+                                    .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), false, false))
+                                        .then(literal("--nosave")
+                                            .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), true, false))
+                                            .then(literal("--exclude-intersections")
+                                                .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), true, true))
+                                            )
+                                        )
+                                        .then(literal("--exclude-intersections")
+                                            .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), false, true))
+                                            .then(literal("--nosave")
+                                                .executes(ctx -> executeRestore(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "id"), StringArgumentType.getString(ctx, "branch"), true, true))
+                                            )
+                                        )
                                 )
                             )
                         )
@@ -760,7 +850,7 @@ public class SvcntrlCommands {
             }
             
             source.sendFeedback(() -> Text.literal("Restoring branch '" + name + "' state...").formatted(Formatting.YELLOW), false);
-            boolean success = AreaSerializer.restoreArea(player, world, project, name, category, restoreId);
+            boolean success = AreaSerializer.restoreArea(player, world, project, name, category, restoreId, false);
             if (!success) {
                 source.sendError(Text.literal("Failed to load branch data."));
             }
@@ -953,7 +1043,7 @@ public class SvcntrlCommands {
         return 1;
     }
 
-    private static int executeRestore(ServerCommandSource source, String category, int id, String branchArg, boolean noSave) {
+    private static int executeRestore(ServerCommandSource source, String category, int id, String branchArg, boolean noSave, boolean excludeIntersections) {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
@@ -979,7 +1069,7 @@ public class SvcntrlCommands {
             source.sendFeedback(() -> Text.literal("Creating auto-save before restore...").formatted(Formatting.YELLOW), false);
             AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", autoId, () -> {
                 project.trimAutoSnapshots(currentBranch, (category.equals("auto") && targetBranch.equals(currentBranch)) ? new int[]{id} : new int[0]);
-                boolean success = AreaSerializer.restoreArea(player, world, project, targetBranch, category, id);
+                boolean success = AreaSerializer.restoreArea(player, world, project, targetBranch, category, id, excludeIntersections);
                 if (success) {
                     ProjectManager.getInstance().saveProject(project);
                 } else {
@@ -990,7 +1080,7 @@ public class SvcntrlCommands {
                 source.sendError(Text.literal("Backup failed: " + err + ". Restore cancelled."));
             });
         } else {
-            boolean success = AreaSerializer.restoreArea(player, world, project, targetBranch, category, id);
+            boolean success = AreaSerializer.restoreArea(player, world, project, targetBranch, category, id, excludeIntersections);
             if (!success) {
                 source.sendError(Text.literal("Failed to restore. Snapshot missing."));
             }
@@ -998,7 +1088,7 @@ public class SvcntrlCommands {
         return 1;
     }
 
-    private static int executeRestorePatch(ServerCommandSource source, String category, int targetId, int baseId, boolean noSave) {
+    private static int executeRestorePatch(ServerCommandSource source, String category, int targetId, int baseId, boolean noSave, boolean excludeIntersections) {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
@@ -1017,7 +1107,7 @@ public class SvcntrlCommands {
             
             AreaSerializer.saveAreaAsync(player, world, project, branchName, "auto", autoId, () -> {
                 project.trimAutoSnapshots(branchName, category.equals("auto") ? new int[]{targetId, baseId} : new int[0]);
-                boolean success = AreaSerializer.restorePatchArea(player, world, project, branchName, category, targetId, branchName, category, baseId);
+                boolean success = AreaSerializer.restorePatchArea(player, world, project, branchName, category, targetId, branchName, category, baseId, excludeIntersections);
                 if (success) {
                     source.sendFeedback(() -> Text.literal("Applying patch (Entities fully replaced)...").formatted(Formatting.GREEN), false);
                     ProjectManager.getInstance().saveProject(project);
@@ -1029,7 +1119,7 @@ public class SvcntrlCommands {
                 source.sendError(Text.literal("Failed to save: " + err));
             });
         } else {
-            boolean success = AreaSerializer.restorePatchArea(player, world, project, branchName, category, targetId, branchName, category, baseId);
+            boolean success = AreaSerializer.restorePatchArea(player, world, project, branchName, category, targetId, branchName, category, baseId, excludeIntersections);
             if (success) {
                 source.sendFeedback(() -> Text.literal("Applying patch (Entities fully replaced)...").formatted(Formatting.GREEN), false);
                 ProjectManager.getInstance().saveProject(project);
@@ -1040,7 +1130,7 @@ public class SvcntrlCommands {
         return 1;
     }
 
-    private static int executeRestorePatchCross(ServerCommandSource source, String category, String targetBranchArg, int targetId, String baseBranchArg, int baseId, boolean noSave) {
+    private static int executeRestorePatchCross(ServerCommandSource source, String category, String targetBranchArg, int targetId, String baseBranchArg, int baseId, boolean noSave, boolean excludeIntersections) {
         String targetBranch = targetBranchArg.toLowerCase(java.util.Locale.ROOT);
         String baseBranch = baseBranchArg.toLowerCase(java.util.Locale.ROOT);
         ServerPlayerEntity player = source.getPlayer();
@@ -1061,7 +1151,7 @@ public class SvcntrlCommands {
             
             AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", autoId, () -> {
                 project.trimAutoSnapshots(currentBranch, category.equals("auto") ? new int[]{targetBranch.equals(currentBranch) ? targetId : -1, baseBranch.equals(currentBranch) ? baseId : -1} : new int[0]);
-                boolean success = AreaSerializer.restorePatchArea(player, world, project, targetBranch, category, targetId, baseBranch, category, baseId);
+                boolean success = AreaSerializer.restorePatchArea(player, world, project, targetBranch, category, targetId, baseBranch, category, baseId, excludeIntersections);
                 if (success) {
                     source.sendFeedback(() -> Text.literal("Cross patch applied successfully! (Entities fully replaced)").formatted(Formatting.GREEN), false);
                     ProjectManager.getInstance().saveProject(project);
@@ -1074,7 +1164,7 @@ public class SvcntrlCommands {
                 source.sendError(Text.literal("Failed to auto-save, cancelling patch: " + err));
             });
         } else {
-            boolean success = AreaSerializer.restorePatchArea(player, world, project, targetBranch, category, targetId, baseBranch, category, baseId);
+            boolean success = AreaSerializer.restorePatchArea(player, world, project, targetBranch, category, targetId, baseBranch, category, baseId, excludeIntersections);
             if (success) {
                 source.sendFeedback(() -> Text.literal("Cross patch applied successfully! (Entities fully replaced)").formatted(Formatting.GREEN), false);
                 ProjectManager.getInstance().saveProject(project);
