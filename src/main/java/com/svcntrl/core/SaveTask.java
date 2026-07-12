@@ -201,7 +201,7 @@ public class SaveTask implements TaskScheduler.TickTask {
 
     @Override
     public void onCancel(Throwable t) {
-        project.setLocked(false);
+        ProjectManager.getInstance().setProjectLocked(project, false);
         if (player != null) {
             player.sendMessage(net.minecraft.text.Text.literal("Save failed/cancelled.").formatted(net.minecraft.util.Formatting.RED), false);
         }
@@ -271,7 +271,7 @@ public class SaveTask implements TaskScheduler.TickTask {
                     world.getServer().execute(() -> onError.accept(t.getMessage()));
                 }
             } finally {
-                project.setLocked(false);
+                ProjectManager.getInstance().setProjectLocked(project, false);
             }
         });
     }
