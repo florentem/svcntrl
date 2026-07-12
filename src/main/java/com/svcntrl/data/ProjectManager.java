@@ -33,11 +33,15 @@ public class ProjectManager {
     public Path getDataDir() { return dataDir; }
 
     public Path getProjectDir(Project project) {
-        return dataDir.resolve(project.getName().toLowerCase(Locale.ROOT));
+        Path resolved = dataDir.resolve(project.getName().toLowerCase(Locale.ROOT)).normalize();
+        if (!resolved.startsWith(dataDir.normalize())) throw new IllegalArgumentException("Path traversal attempt in project: " + project.getName());
+        return resolved;
     }
 
     public Path getSnapshotPath(Project project, String branchName, String category, int id) {
-        return getProjectDir(project).resolve(branchName.toLowerCase(Locale.ROOT)).resolve(category).resolve("snapshot_" + id + ".nbt");
+        Path resolved = getProjectDir(project).resolve(branchName.toLowerCase(Locale.ROOT)).resolve(category).resolve("snapshot_" + id + ".nbt").normalize();
+        if (!resolved.startsWith(dataDir.normalize())) throw new IllegalArgumentException("Path traversal attempt in branch: " + branchName);
+        return resolved;
     }
 
     public Project getProject(String name) {
@@ -260,7 +264,8 @@ public class ProjectManager {
         if (dataDir == null) return;
         java.util.concurrent.CompletableFuture.runAsync(() -> {
             try {
-                Path branchDir = getProjectDir(project).resolve(branchName);
+                Path branchDir = getProjectDir(project).resolve(branchName).normalize();
+                if (!branchDir.startsWith(dataDir.normalize())) throw new IllegalArgumentException("Path traversal attempt in branch: " + branchName);
                 if (Files.exists(branchDir)) {
                     Files.walkFileTree(branchDir, new java.nio.file.SimpleFileVisitor<Path>() {
                         @Override

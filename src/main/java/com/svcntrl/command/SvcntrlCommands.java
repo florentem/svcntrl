@@ -754,6 +754,7 @@ public class SvcntrlCommands {
         String name = nameArg.toLowerCase(java.util.Locale.ROOT);
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
+        if (!isValidName(name)) { source.sendError(Text.literal("Invalid branch name. Use only letters, numbers, underscores, and hyphens.")); return 0; }
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
         if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
@@ -805,6 +806,7 @@ public class SvcntrlCommands {
         String name = nameArg.toLowerCase(java.util.Locale.ROOT);
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
+        if (!isValidName(name)) { source.sendError(Text.literal("Invalid branch name. Use only letters, numbers, underscores, and hyphens.")); return 0; }
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
         if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
@@ -883,6 +885,7 @@ public class SvcntrlCommands {
         String name = nameArg.toLowerCase(java.util.Locale.ROOT);
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
+        if (!isValidName(name)) { source.sendError(Text.literal("Invalid branch name. Use only letters, numbers, underscores, and hyphens.")); return 0; }
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
         if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
