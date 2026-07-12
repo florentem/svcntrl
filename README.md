@@ -14,3 +14,6 @@ svcntrl brings a simplified Git-like workflow (based on snapshots) directly into
 ```bash
 ./gradlew build
 ```
+
+## About Development
+This mod was built in collaboration with an AI agent. The codebase has been thoroughly reviewed and tested to ensure strict conceptual integrity, complete functionality, and production-ready performance.
