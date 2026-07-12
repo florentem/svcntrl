@@ -44,7 +44,12 @@ public class AreaSerializer {
 
     public static void saveAreaAsync(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, Project project, String branchName, String category, int snapshotId, Runnable onSuccess, java.util.function.Consumer<String> onError) {
         ProjectManager.getInstance().setProjectLocked(project, true);
-        TaskScheduler.getInstance().schedule(new SaveTask(player, world, project, branchName, category, snapshotId, onSuccess, onError));
+        try {
+            TaskScheduler.getInstance().schedule(new SaveTask(player, world, project, branchName, category, snapshotId, onSuccess, onError));
+        } catch (Throwable t) {
+            ProjectManager.getInstance().setProjectLocked(project, false);
+            if (onError != null) onError.accept("Internal error during save task initialization: " + t.getMessage());
+        }
     }
 
     /**
@@ -69,14 +74,19 @@ public class AreaSerializer {
             try {
                 NbtCompound root = NbtIo.readCompressed(filePath, NbtSizeTracker.ofUnlimitedBytes());
                 world.getServer().execute(() -> {
-                    BlockPos min = project.getMin();
-                    BlockPos max = project.getMax();
+                    try {
+                        BlockPos min = project.getMin();
+                        BlockPos max = project.getMax();
 
+                        NbtList entities = root.getListOrEmpty("Entities");
 
-                    NbtList entities = root.getListOrEmpty("Entities");
-
-                    TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, root, entities, project));
-                    SvcntrlMod.LOGGER.info("[svcntrl] Scheduled restore task for project '{}' (snapshot {} {})", project.getName(), snapshotId, category);
+                        TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, root, entities, project));
+                        SvcntrlMod.LOGGER.info("[svcntrl] Scheduled restore task for project '{}' (snapshot {} {})", project.getName(), snapshotId, category);
+                    } catch (Throwable t) {
+                        SvcntrlMod.LOGGER.error("[svcntrl] Failed to schedule restore task", t);
+                        ProjectManager.getInstance().setProjectLocked(project, false);
+                        if (player != null) player.sendMessage(net.minecraft.text.Text.literal("Failed to schedule restore.").formatted(net.minecraft.util.Formatting.RED));
+                    }
                 });
             } catch (Throwable e) {
                 SvcntrlMod.LOGGER.error("[svcntrl] Failed to read snapshot file: {}", filePath, e);
@@ -168,9 +178,15 @@ public class AreaSerializer {
 
 
                 world.getServer().execute(() -> {
-                    NbtList emptyEntities = new NbtList();
-                    TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, targetRoot, emptyEntities, project, patchMask, patchEntities));
-                    SvcntrlMod.LOGGER.info("[svcntrl] Scheduled patch task for project '{}' (target {} vs base {})", project.getName(), targetId, baseId);
+                    try {
+                        NbtList emptyEntities = new NbtList();
+                        TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, targetRoot, emptyEntities, project, patchMask, patchEntities));
+                        SvcntrlMod.LOGGER.info("[svcntrl] Scheduled patch task for project '{}' (target {} vs base {})", project.getName(), targetId, baseId);
+                    } catch (Throwable t) {
+                        SvcntrlMod.LOGGER.error("[svcntrl] Failed to schedule patch task", t);
+                        ProjectManager.getInstance().setProjectLocked(project, false);
+                        if (player != null) player.sendMessage(net.minecraft.text.Text.literal("Failed to schedule patch restore.").formatted(net.minecraft.util.Formatting.RED));
+                    }
                 });
             } catch (Throwable e) {
                 SvcntrlMod.LOGGER.error("[svcntrl] Failed to read patch files", e);

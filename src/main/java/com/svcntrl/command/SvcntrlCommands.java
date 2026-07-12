@@ -791,6 +791,7 @@ public class SvcntrlCommands {
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.literal("Project is locked by another operation.")); return 0; }
         if (!project.isOwner(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("Only owner can delete branches.")); return 0; }
         if (project.getCurrentBranchName().equals(name)) { source.sendError(Text.literal("Cannot delete current branch.")); return 0; }
         if (!project.hasBranch(name)) { source.sendError(Text.literal("Branch not found.")); return 0; }
@@ -807,6 +808,7 @@ public class SvcntrlCommands {
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.literal("Project is locked by another operation.")); return 0; }
         if (!project.isOwner(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access. Only the owner can delete snapshots.")); return 0; }
 
         Project.Branch branch = project.getBranch(project.getCurrentBranchName());
@@ -1088,6 +1090,7 @@ public class SvcntrlCommands {
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.literal("Project is locked by another operation.")); return 0; }
         if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
 
         String targetBranch = (branchArg != null && !branchArg.isEmpty()) ? branchArg.toLowerCase(java.util.Locale.ROOT) : project.getCurrentBranchName();
@@ -1114,6 +1117,7 @@ public class SvcntrlCommands {
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.literal("Project is locked by another operation.")); return 0; }
         if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
         
         String targetBranch = (branchArg != null && !branchArg.isEmpty()) ? branchArg.toLowerCase(java.util.Locale.ROOT) : project.getCurrentBranchName();
@@ -1128,6 +1132,7 @@ public class SvcntrlCommands {
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.literal("Project is locked by another operation.")); return 0; }
         if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
         
         String targetBranch = (branchArg != null && !branchArg.isEmpty()) ? branchArg.toLowerCase(java.util.Locale.ROOT) : project.getCurrentBranchName();
@@ -1144,6 +1149,7 @@ public class SvcntrlCommands {
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.literal("Project is locked by another operation.")); return 0; }
         if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
 
         ExportManager.exportDiff(project, targetBranch, "manual", targetId, baseBranch, "manual", baseId, player);
@@ -1155,6 +1161,7 @@ public class SvcntrlCommands {
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) return 0;
+        if (project.isLocked()) { source.sendError(Text.literal("Project is locked by another operation.")); return 0; }
         if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
         ExportManager.exportProjectFull(project, player);
         return 1;
