@@ -581,9 +581,14 @@ public class SvcntrlCommands {
         return 1;
     }
 
+    private static boolean isValidName(String name) {
+        return name != null && name.matches("^[a-zA-Z0-9_-]{1,32}$") && !name.equals(".") && !name.equals("..");
+    }
+
     private static int executeCreate(ServerCommandSource source, String name) {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) { source.sendError(Text.literal("This command can only be used by players.")); return 0; }
+        if (!isValidName(name)) { source.sendError(Text.literal("Invalid name. Use only letters, numbers, underscores, and hyphens (max 32 chars).")); return 0; }
         PendingCreateManager.getInstance().startCreation(player, name);
         return 1;
     }
@@ -631,8 +636,8 @@ public class SvcntrlCommands {
             source.sendError(Text.literal("Cannot delete project: an operation is in progress."));
             return 0;
         }
-        ProjectManager.getInstance().removeProject(name);
         com.svcntrl.core.PreviewManager.getInstance().stopPreviewForProject(source.getServer(), name);
+        ProjectManager.getInstance().removeProject(name);
         source.sendFeedback(() -> Text.literal("Project '" + name + "' was permanently deleted.").formatted(Formatting.RED), true);
         return 1;
     }
@@ -917,7 +922,11 @@ public class SvcntrlCommands {
         }
         
         java.nio.file.Path snapshotPath = ProjectManager.getInstance().getSnapshotPath(project, branch.getName(), category, id);
-        snapshots.remove(target);
+        if (category.equals("manual")) {
+            branch.removeManualSnapshot(id);
+        } else {
+            branch.removeAutoSnapshot(id);
+        }
         
         java.util.concurrent.CompletableFuture.runAsync(() -> {
             try {

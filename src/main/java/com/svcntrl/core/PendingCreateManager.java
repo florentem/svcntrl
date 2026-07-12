@@ -118,10 +118,7 @@ public class PendingCreateManager {
             int minZ = Math.min(state.pos1.getZ(), state.pos2.getZ());
             int maxZ = Math.max(state.pos1.getZ(), state.pos2.getZ());
 
-            // Intersections are now allowed
-
-            pending.remove(player.getUuid());
-
+            // Intersections are now allowed, but we warn the user
             Project project = new Project(
                     state.projectName,
                     player.getUuid(),
@@ -131,10 +128,24 @@ public class PendingCreateManager {
                     player.getWorld().getRegistryKey().getValue().toString()
             );
 
+            boolean overlaps = false;
+            for (Project p : com.svcntrl.data.ProjectManager.getInstance().getProjects()) {
+                if (p.intersects(project)) {
+                    overlaps = true;
+                    break;
+                }
+            }
+
+            pending.remove(player.getUuid());
+
             if (ProjectManager.getInstance().createProject(project)) {
                 ProjectManager.getInstance().setActiveProject(player.getUuid(), project.getName());
                 player.sendMessage(Text.literal("Project '" + state.projectName + "' created successfully and set as active!")
                         .formatted(Formatting.GREEN), false);
+                if (overlaps) {
+                    player.sendMessage(Text.literal("Warning: This project overlaps with another existing project. Operations on this project may be temporarily blocked if the other project is being saved or restored.")
+                            .formatted(Formatting.YELLOW), false);
+                }
             } else {
                 player.sendMessage(Text.literal("Failed to create project. Name already exists.")
                         .formatted(Formatting.RED), false);

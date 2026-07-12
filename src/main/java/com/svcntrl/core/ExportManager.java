@@ -36,7 +36,17 @@ public class ExportManager {
 
     public static void tick() {
         long now = System.currentTimeMillis();
-        pendingUploads.entrySet().removeIf(entry -> now > entry.getValue().expiryTime);
+        pendingUploads.entrySet().removeIf(entry -> {
+            if (now > entry.getValue().expiryTime) {
+                try {
+                    Files.deleteIfExists(entry.getValue().path);
+                    String base = entry.getValue().path.getFileName().toString().replace(".zip", "");
+                    Files.deleteIfExists(entry.getValue().path.getParent().resolve(base));
+                } catch (Exception ignored) {}
+                return true;
+            }
+            return false;
+        });
     }
 
     public static boolean hasPendingUpload(java.util.UUID uuid) {
@@ -734,6 +744,11 @@ public class ExportManager {
                                         })), false);
                         player.sendMessage(net.minecraft.text.Text.literal("Security Notice: This link is public and expires in 60 minutes.").formatted(net.minecraft.util.Formatting.GRAY), false);
                     }
+                    try {
+                        Files.deleteIfExists(zipPath);
+                        String base = zipPath.getFileName().toString().replace(".zip", "");
+                        Files.deleteIfExists(zipPath.getParent().resolve(base));
+                    } catch (Exception ignored) {}
                 } else {
                     if (player != null) player.sendMessage(net.minecraft.text.Text.literal("Failed to upload: Invalid API response.").formatted(net.minecraft.util.Formatting.RED), false);
                 }
