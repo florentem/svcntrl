@@ -382,6 +382,7 @@ public class AreaSerializer {
                             cachedChunk = world.getWorldChunk(mutable);
                             cachedChunkX = currentChunkX;
                             cachedChunkZ = currentChunkZ;
+                            if ((System.nanoTime() - startTime) > maxTimeNs) return false;
                         }
                         
                         if (!state.equals(cachedChunk.getBlockState(mutable))) {
@@ -423,6 +424,7 @@ public class AreaSerializer {
                             cachedChunk = world.getWorldChunk(mutable);
                             cachedChunkX = currentChunkX;
                             cachedChunkZ = currentChunkZ;
+                            if ((System.nanoTime() - startTime) > maxTimeNs) return false;
                         }
 
                         if (!state.equals(cachedChunk.getBlockState(mutable))) {

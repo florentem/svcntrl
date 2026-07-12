@@ -18,7 +18,8 @@ public class SvcntrlConfig {
     public String outlineParticle = "minecraft:flame";
     public int outlineFrequencyTicks = 15;
     public boolean allowPublicExport = false;
-    public int maxRegionVolume = 100000000;
+    public long taskBudgetNs = 25_000_000L;
+    public int maxRegionVolume = 5_000_000;
     public String[] raycastParticlePool = new String[]{
             "minecraft:end_rod", "minecraft:happy_villager", "minecraft:flame", "minecraft:soul_fire_flame",
             "minecraft:glow", "minecraft:wax_on", "minecraft:wax_off", "minecraft:nautilus",

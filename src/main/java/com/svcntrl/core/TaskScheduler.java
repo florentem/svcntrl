@@ -38,7 +38,7 @@ public class TaskScheduler {
         }
         if (tasks.isEmpty()) return;
         
-        long globalBudgetNs = 25_000_000L; // 25ms
+        long globalBudgetNs = com.svcntrl.config.SvcntrlConfig.getInstance().taskBudgetNs;
         long startNs = System.nanoTime();
         
         if (nextTaskIndex >= tasks.size()) nextTaskIndex = 0;

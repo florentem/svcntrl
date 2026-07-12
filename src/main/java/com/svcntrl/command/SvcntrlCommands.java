@@ -731,7 +731,6 @@ public class SvcntrlCommands {
         }
 
         int snapshotId = project.addManualSnapshot(branchName, description, player.getUuid(), player.getName().getString());
-        ProjectManager.getInstance().saveProject(project);
         
         source.sendFeedback(() -> Text.literal("Saving project '").append(Text.literal(project.getName()).formatted(Formatting.AQUA)).append(Text.literal("'...")), false);
         
@@ -918,79 +917,21 @@ public class SvcntrlCommands {
         }
         
         java.nio.file.Path snapshotPath = ProjectManager.getInstance().getSnapshotPath(project, branch.getName(), category, id);
-        try {
-            java.nio.file.Files.deleteIfExists(snapshotPath);
-        } catch (java.io.IOException e) {
-            com.svcntrl.SvcntrlMod.LOGGER.error("Failed to delete snapshot file", e);
-            source.sendError(Text.literal("Failed to delete snapshot file: " + e.getMessage()));
-            return 0; // Abort if we can't even delete the file
-        }
-
         snapshots.remove(target);
         
-        // Shift subsequent snapshots
-        for (Project.SnapshotMeta meta : snapshots) {
-            if (meta.getId() > id) {
-                int oldId = meta.getId();
-                int newId = oldId - 1;
-                
-                java.nio.file.Path oldPath = ProjectManager.getInstance().getSnapshotPath(project, branch.getName(), category, oldId);
-                java.nio.file.Path newPath = ProjectManager.getInstance().getSnapshotPath(project, branch.getName(), category, newId);
-                try {
-                    if (java.nio.file.Files.exists(oldPath)) {
-                        java.nio.file.Files.move(oldPath, newPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                    }
-                    meta.setId(newId); // Only update metadata if rename succeeded
-                } catch (java.io.IOException e) {
-                    com.svcntrl.SvcntrlMod.LOGGER.error("Failed to rename snapshot file from {} to {}", oldId, newId, e);
-                    source.sendError(Text.literal("Error shifting snapshot ID " + oldId + ". Aborting further shifts to prevent corruption."));
-                    break;
-                }
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                java.nio.file.Files.deleteIfExists(snapshotPath);
+                ProjectManager.getInstance().saveProject(project);
+            } catch (java.io.IOException e) {
+                com.svcntrl.SvcntrlMod.LOGGER.error("Failed to delete snapshot file", e);
             }
-        }
-        
-        if (category.equals("manual")) {
-            branch.setNextManualId(branch.getNextManualId() - 1);
-        } else {
-            branch.setNextAutoId(branch.getNextAutoId() - 1);
-        }
-
-        ProjectManager.getInstance().saveProject(project);
+        });
+        // Project is saved in async block
         source.sendFeedback(() -> Text.literal("Snapshot " + id + " (" + category + ") deleted.").formatted(Formatting.GREEN), false);
         return 1;
     }
 
-    private static int executeSave(ServerCommandSource source, String description, String branchArg) {
-        ServerPlayerEntity player = source.getPlayer();
-        if (player == null) return 0;
-
-        Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
-
-        ServerWorld world = getProjectWorld(source, project);
-        if (world == null) return 0;
-
-        if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
-
-        String targetBranch = (branchArg != null && !branchArg.isEmpty()) ? branchArg.toLowerCase(java.util.Locale.ROOT) : project.getCurrentBranchName();
-        if (!project.hasBranch(targetBranch)) { source.sendError(Text.literal("Branch not found: " + targetBranch)); return 0; }
-
-        String desc = description.isEmpty() ? "Manual save" : description;
-        int snapshotId = project.addManualSnapshot(targetBranch, desc, player.getUuid(), player.getName().getString());
-        
-        source.sendFeedback(() -> Text.literal("Saving project '").append(Text.literal(project.getName()).formatted(Formatting.AQUA)).append(Text.literal("'...")), false);
-        
-        AreaSerializer.saveAreaAsync(player, world, project, targetBranch, "manual", snapshotId, () -> {
-            ProjectManager.getInstance().saveProject(project);
-            source.sendFeedback(() -> Text.literal("Project saved! Snapshot ID: ").formatted(Formatting.GREEN).append(Text.literal(String.valueOf(snapshotId)).formatted(Formatting.GOLD)), false);
-        }, error -> {
-            project.getBranch(targetBranch).removeManualSnapshot(snapshotId);
-            source.sendError(Text.literal("Failed to save: " + error));
-        });
-
-        return 1;
-    }
 
     private static int executeLog(ServerCommandSource source, String category, int page) {
         ServerPlayerEntity player = source.getPlayer();

@@ -323,6 +323,7 @@ public class PreviewManager {
                         cachedChunk = world.getWorldChunk(mutable);
                         cachedChunkX = currentChunkX;
                         cachedChunkZ = currentChunkZ;
+                        if ((System.nanoTime() - startTime) > maxTimeNs) return false;
                     }
 
                     BlockState actualState = cachedChunk.getBlockState(mutable);

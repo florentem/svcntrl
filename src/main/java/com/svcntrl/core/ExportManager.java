@@ -250,7 +250,6 @@ public class ExportManager {
         metadata.putInt("RegionCount", 1);
         metadata.putLong("TimeCreated", System.currentTimeMillis());
         metadata.putLong("TimeModified", System.currentTimeMillis());
-        metadata.putInt("TotalBlocks", sizeX * sizeY * sizeZ);
         metadata.putInt("TotalVolume", sizeX * sizeY * sizeZ);
         litematic.put("Metadata", metadata);
 
@@ -281,7 +280,6 @@ public class ExportManager {
                 beOut.putInt("x", be.getInt("X", 0));
                 beOut.putInt("y", be.getInt("Y", 0));
                 beOut.putInt("z", be.getInt("Z", 0));
-                beOut.putString("id", be.getString("Id", ""));
                 blockEntitiesOut.add(beOut);
             }
         } else {
@@ -331,6 +329,21 @@ public class ExportManager {
             }
             if (player != null) player.sendMessage(net.minecraft.text.Text.literal("Converting V1 Blocks: 100.0%").formatted(net.minecraft.util.Formatting.GREEN), true);
         }
+
+        int totalBlocks = 0;
+        int airIndex = -1;
+        for (int i = 0; i < palette.size(); i++) {
+            if (palette.get(i).name.equals("minecraft:air") || palette.get(i).name.equals("minecraft:cave_air") || palette.get(i).name.equals("minecraft:void_air")) {
+                airIndex = i;
+                break;
+            }
+        }
+        for (int pIdx : blockData) {
+            if (pIdx != airIndex) {
+                totalBlocks++;
+            }
+        }
+        metadata.putInt("TotalBlocks", totalBlocks);
 
         NbtCompound regions = new NbtCompound();
         NbtCompound region = new NbtCompound();
@@ -491,7 +504,6 @@ public class ExportManager {
         metadata.putInt("RegionCount", 1);
         metadata.putLong("TimeCreated", System.currentTimeMillis());
         metadata.putLong("TimeModified", System.currentTimeMillis());
-        metadata.putInt("TotalBlocks", sizeX * sizeY * sizeZ);
         metadata.putInt("TotalVolume", sizeX * sizeY * sizeZ);
         litematic.put("Metadata", metadata);
 
@@ -571,6 +583,12 @@ public class ExportManager {
             }
             outData[i] = pIndex;
         }
+        int totalBlocks = 0;
+        int airIdx = outPaletteMap.getOrDefault(airEntry, -1);
+        for (int pIdx : outData) {
+            if (pIdx != airIdx) totalBlocks++;
+        }
+        metadata.putInt("TotalBlocks", totalBlocks);
 
         NbtCompound regions = new NbtCompound();
         NbtCompound region = new NbtCompound();

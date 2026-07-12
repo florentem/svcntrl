@@ -133,6 +133,9 @@ public class SaveTask implements TaskScheduler.TickTask {
                         cachedChunk = world.getWorldChunk(mutable);
                         cachedChunkX = currentChunkX;
                         cachedChunkZ = currentChunkZ;
+                        
+                        // Budget check after potential force-load
+                        if ((System.nanoTime() - startTime) > maxTimeNs) return false;
                     }
 
                     BlockState state = cachedChunk.getBlockState(mutable);
@@ -144,7 +147,7 @@ public class SaveTask implements TaskScheduler.TickTask {
                     
                     blockData[index] = getPaletteIndex(state);
 
-                    BlockEntity blockEntity = world.getBlockEntity(mutable);
+                    BlockEntity blockEntity = cachedChunk.getBlockEntity(mutable);
                     if (blockEntity != null) {
                         NbtCompound beNbt = blockEntity.createNbtWithIdentifyingData(world.getRegistryManager());
                         beNbt.remove("x");
@@ -259,19 +262,35 @@ public class SaveTask implements TaskScheduler.TickTask {
             try {
                 Path filePath = ProjectManager.getInstance().getSnapshotPath(project, branchName, category, snapshotId);
                 Files.createDirectories(filePath.getParent());
-                NbtIo.writeCompressed(root, filePath);
+                Path tempPath = filePath.getParent().resolve(filePath.getFileName() + ".tmp");
+                NbtIo.writeCompressed(root, tempPath);
+                Files.move(tempPath, filePath, java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 SvcntrlMod.LOGGER.info("[svcntrl] Saved V2 snapshot {} ({}) for project '{}' — {} blocks ({} unique), {} entities",
                         snapshotId, category, project.getName(), blockData.length, paletteList.size(), entityList.size());
                 if (onSuccess != null) {
-                    world.getServer().execute(onSuccess);
+                    world.getServer().execute(() -> {
+                        try {
+                            onSuccess.run();
+                        } finally {
+                            ProjectManager.getInstance().setProjectLocked(project, false);
+                        }
+                    });
+                } else {
+                    world.getServer().execute(() -> ProjectManager.getInstance().setProjectLocked(project, false));
                 }
             } catch (Throwable t) {
                 SvcntrlMod.LOGGER.error("[svcntrl] Fatal error in async save", t);
                 if (onError != null) {
-                    world.getServer().execute(() -> onError.accept(t.getMessage()));
+                    world.getServer().execute(() -> {
+                        try {
+                            onError.accept(t.getMessage());
+                        } finally {
+                            ProjectManager.getInstance().setProjectLocked(project, false);
+                        }
+                    });
+                } else {
+                    world.getServer().execute(() -> ProjectManager.getInstance().setProjectLocked(project, false));
                 }
-            } finally {
-                ProjectManager.getInstance().setProjectLocked(project, false);
             }
         });
     }

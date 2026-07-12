@@ -150,8 +150,12 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
         if (UXManager.getInstance().isRaycasting(player.getUuid())) {
             com.svcntrl.data.Project project = UXManager.getInstance().getProjectLookingAt((net.minecraft.server.network.ServerPlayerEntity) player);
             if (project != null) {
-                ProjectManager.getInstance().setActiveProject(player.getUuid(), project.getName());
-                player.sendMessage(Text.literal("Selected project: ").append(Text.literal(project.getName()).formatted(Formatting.AQUA, Formatting.BOLD)), false);
+                if (!project.isMember(player.getUuid()) && !player.hasPermissionLevel(2)) {
+                    player.sendMessage(Text.literal("You don't have access to this project.").formatted(Formatting.RED), false);
+                } else {
+                    ProjectManager.getInstance().setActiveProject(player.getUuid(), project.getName());
+                    player.sendMessage(Text.literal("Selected project: ").append(Text.literal(project.getName()).formatted(Formatting.AQUA, Formatting.BOLD)), false);
+                }
             } else {
                 player.sendMessage(Text.literal("Raycast selection cancelled (no project found).").formatted(Formatting.RED), false);
             }
