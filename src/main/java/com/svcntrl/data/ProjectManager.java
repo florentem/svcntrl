@@ -92,6 +92,7 @@ public class ProjectManager {
             }
 
             activeProjects.entrySet().removeIf(entry -> entry.getValue().equalsIgnoreCase(name));
+            lockedProjects.remove(project);
         }
     }
 

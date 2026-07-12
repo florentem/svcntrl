@@ -542,6 +542,7 @@ public class SvcntrlCommands {
             return 0;
         }
         ProjectManager.getInstance().removeProject(name);
+        com.svcntrl.core.PreviewManager.getInstance().stopPreviewForProject(source.getServer(), name);
         source.sendFeedback(() -> Text.literal("Project '" + name + "' was permanently deleted.").formatted(Formatting.RED), true);
         return 1;
     }

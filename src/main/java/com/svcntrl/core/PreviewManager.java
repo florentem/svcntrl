@@ -61,6 +61,25 @@ public class PreviewManager {
         return previewingProjects.values();
     }
 
+    public void stopPreviewForProject(net.minecraft.server.MinecraftServer server, String projectName) {
+        String lowerName = projectName.toLowerCase(java.util.Locale.ROOT);
+        for (Map.Entry<UUID, String> entry : previewingProjects.entrySet()) {
+            if (entry.getValue().toLowerCase(java.util.Locale.ROOT).equals(lowerName)) {
+                net.minecraft.server.network.ServerPlayerEntity p = server.getPlayerManager().getPlayer(entry.getKey());
+                if (p != null) {
+                    stopPreview(p, false);
+                } else {
+                    UUID uuid = entry.getKey();
+                    pendingPreviews.remove(uuid);
+                    activePreviews.remove(uuid);
+                    activePreviewEntities.remove(uuid);
+                    previewBoundingBoxes.remove(uuid);
+                    previewingProjects.remove(uuid);
+                }
+            }
+        }
+    }
+
     public boolean isEntityHidden(ServerPlayerEntity player, Entity entity) {
         if (!hasPreview(player.getUuid())) return false;
         if (entity instanceof net.minecraft.server.network.ServerPlayerEntity) return false;
