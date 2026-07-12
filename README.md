@@ -10,25 +10,24 @@ svcntrl uses a straightforward snapshot system designed specifically to handle l
 
 ### Projects & Selection
 Everything starts with a **Project** (a cubic region in the world). You can freely create overlapping or nested projects to organize your builds (e.g., placing a redstone machine "sub-project" inside a larger city "project").
-- **Selection:** Use a **Wooden Sword** (Left-click for pos1, Right-click for pos2) or use `/svcntrl pos1` and `/svcntrl pos2`.
-- `/svcntrl project create <name>` - Create a new project from your selection.
+- `/svcntrl project create <name>` - Create a new project.
 - `/svcntrl select <name>` - Set your active project.
 - `/svcntrl raycast` - Look at a project and right-click to select it visually.
 - `/svcntrl outline` - Toggle particle borders for your active project.
 
-*(Other project commands: `/svcntrl project list`, `info`, `rename`, `delete`)*
+*(Other project commands: `/svcntrl project list`, `delete`)*
 
 ### Snapshots & Previews
 Save your progress and roll back when necessary. The mod auto-saves a backup before any rollback to prevent accidental data loss.
-- `/svcntrl save <snapshot_name>` - Save the current state of your project.
-- `/svcntrl snapshots` - View the history of your saves.
+- `/svcntrl save <snapshot_description>` - Save the current state of your project.
+- `/svcntrl logs` - View the history of your saves.
 - `/svcntrl preview start <id>` - Visually preview a past snapshot (renders phantom blocks over the world).
 - `/svcntrl preview stop` - Exit preview mode.
 - `/svcntrl restore <id> [--nosave] [--exclude-intersections]` - Revert your project to a past snapshot.
 - `/svcntrl restore patch <target_id> <base_id> [--nosave] [--exclude-intersections]` - Apply only the difference between two snapshots (applies changes made in target relative to base).
 - `/svcntrl restore patch cross <target_branch> <target_id> <base_branch> <base_id> [--nosave] [--exclude-intersections]` - Apply a patch between two snapshots from different branches.
 
-> **Pro Tip:** Use the `--exclude-intersections` flag when restoring a large project to skip modifying any blocks or entities that belong to overlapping sub-projects, keeping your isolated work safe.
+> **Tip:** Use the `--exclude-intersections` flag when restoring a large project to skip modifying any blocks or entities that belong to overlapping sub-projects, keeping your isolated work safe.
 
 ### Branches
 Test different design variations (e.g., trying a stone roof instead of a wooden one) without destroying the original structure.
