@@ -25,6 +25,8 @@ Save your progress and roll back when necessary. The mod auto-saves a backup bef
 - `/svcntrl preview start <id>` - Visually preview a past snapshot (renders phantom blocks over the world).
 - `/svcntrl preview stop` - Exit preview mode.
 - `/svcntrl restore <id>` - Revert your project to a past snapshot.
+- `/svcntrl restore patch <target_id> <base_id>` - Apply only the difference between two snapshots (applies changes made in target relative to base).
+- `/svcntrl restore patch_cross <target_branch> <target_id> <base_branch> <base_id>` - Apply a patch between two snapshots from different branches.
 
 ### Branches
 Test different design variations (e.g., trying a stone roof instead of a wooden one) without destroying the original structure.
