@@ -130,7 +130,12 @@ public class SaveTask implements TaskScheduler.TickTask {
                     int currentChunkX = cx >> 4;
                     int currentChunkZ = cz >> 4;
                     if (cachedChunk == null || cachedChunkX != currentChunkX || cachedChunkZ != currentChunkZ) {
-                        cachedChunk = world.getWorldChunk(mutable);
+                        net.minecraft.world.chunk.Chunk chunk = world.getChunk(currentChunkX, currentChunkZ, net.minecraft.world.chunk.ChunkStatus.FULL, false);
+                        if (chunk == null) {
+                            world.getChunkManager().addTicket(net.minecraft.server.world.ChunkTicketType.UNKNOWN, new net.minecraft.util.math.ChunkPos(currentChunkX, currentChunkZ), 2);
+                            return false;
+                        }
+                        cachedChunk = (net.minecraft.world.chunk.WorldChunk) chunk;
                         cachedChunkX = currentChunkX;
                         cachedChunkZ = currentChunkZ;
                         
@@ -193,7 +198,7 @@ public class SaveTask implements TaskScheduler.TickTask {
         if (cx > max.getX()) {
             finishedBlocks = true;
             if (player != null) {
-                player.sendMessage(net.minecraft.text.Text.literal("Saving: 100.0%").formatted(net.minecraft.util.Formatting.GREEN), true);
+                player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.saving_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
             }
             finishSave();
             return true;
@@ -206,7 +211,7 @@ public class SaveTask implements TaskScheduler.TickTask {
     public void onCancel(Throwable t) {
         ProjectManager.getInstance().setProjectLocked(project, false);
         if (player != null) {
-            player.sendMessage(net.minecraft.text.Text.literal("Save failed/cancelled.").formatted(net.minecraft.util.Formatting.RED), false);
+            player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.save_failed_cancelled").formatted(net.minecraft.util.Formatting.RED), false);
         }
         if (onError != null) {
             onError.accept(t.getMessage());

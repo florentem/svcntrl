@@ -74,20 +74,20 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
             if (world.isClient()) return true;
             if (UXManager.getInstance().isRaycasting(player.getUuid())) {
-                player.sendMessage(Text.literal("You cannot break blocks in selection mode.").formatted(Formatting.RED), true);
+                player.sendMessage(Text.translatable("svcntrl.msg.you_cannot_break_blocks_in_sel").formatted(Formatting.RED), true);
                 return false;
             }
             if (PreviewManager.getInstance().hasPreview(player.getUuid())) {
-                player.sendMessage(Text.literal("You cannot break blocks while previewing. Use /svcntrl preview stop").formatted(Formatting.RED), true);
+                player.sendMessage(Text.translatable("svcntrl.msg.you_cannot_break_blocks_while").formatted(Formatting.RED), true);
                 PreviewManager.getInstance().resendBlock((net.minecraft.server.network.ServerPlayerEntity) player, pos);
                 return false;
             }
             if (isPosPreviewed(world, pos)) {
-                player.sendMessage(Text.literal("Cannot modify area: A preview is active in this project.").formatted(Formatting.RED), true);
+                player.sendMessage(Text.translatable("svcntrl.msg.cannot_modify_area_a_preview_i").formatted(Formatting.RED), true);
                 return false;
             }
             if (isPosLocked(world, pos)) {
-                player.sendMessage(Text.literal("Cannot modify area: A save/restore operation is in progress.").formatted(Formatting.RED), true);
+                player.sendMessage(Text.translatable("svcntrl.msg.cannot_modify_area_a_save_rest").formatted(Formatting.RED), true);
                 return false;
             }
             return true;
@@ -110,17 +110,17 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
             }
 
             if (PreviewManager.getInstance().hasPreview(player.getUuid())) {
-                player.sendMessage(Text.literal("You cannot interact while previewing. Use /svcntrl preview stop").formatted(Formatting.RED), true);
+                player.sendMessage(Text.translatable("svcntrl.msg.you_cannot_interact_while_prev").formatted(Formatting.RED), true);
                 return ActionResult.FAIL;
             }
             
             if (hitResult instanceof net.minecraft.util.hit.BlockHitResult blockHit) {
                 if (isPosPreviewed(world, blockHit.getBlockPos())) {
-                    player.sendMessage(Text.literal("Cannot modify area: A preview is active here.").formatted(Formatting.RED), true);
+                    player.sendMessage(Text.translatable("svcntrl.msg.cannot_modify_area_a_preview_i").formatted(Formatting.RED), true);
                     return ActionResult.FAIL;
                 }
                 if (isPosLocked(world, blockHit.getBlockPos())) {
-                    player.sendMessage(Text.literal("Cannot modify area: A save/restore operation is in progress.").formatted(Formatting.RED), true);
+                    player.sendMessage(Text.translatable("svcntrl.msg.cannot_modify_area_a_save_rest").formatted(Formatting.RED), true);
                     return ActionResult.FAIL;
                 }
             }
@@ -157,13 +157,13 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
             com.svcntrl.data.Project project = UXManager.getInstance().getProjectLookingAt((net.minecraft.server.network.ServerPlayerEntity) player);
             if (project != null) {
                 if (!project.isMember(player.getUuid()) && !player.hasPermissionLevel(2)) {
-                    player.sendMessage(Text.literal("You don't have access to this project.").formatted(Formatting.RED), false);
+                    player.sendMessage(Text.translatable("svcntrl.msg.you_don_t_have_access_to_this").formatted(Formatting.RED), false);
                 } else {
                     ProjectManager.getInstance().setActiveProject(player.getUuid(), project.getName());
-                    player.sendMessage(Text.literal("Selected project: ").append(Text.literal(project.getName()).formatted(Formatting.AQUA, Formatting.BOLD)), false);
+                    player.sendMessage(Text.translatable("svcntrl.msg.selected_project").append(Text.literal(project.getName()).formatted(Formatting.AQUA, Formatting.BOLD)), false);
                 }
             } else {
-                player.sendMessage(Text.literal("Raycast selection cancelled (no project found).").formatted(Formatting.RED), false);
+                player.sendMessage(Text.translatable("svcntrl.msg.raycast_selection_cancelled_no").formatted(Formatting.RED), false);
             }
             UXManager.getInstance().setRaycasting(player.getUuid(), false);
             return true;

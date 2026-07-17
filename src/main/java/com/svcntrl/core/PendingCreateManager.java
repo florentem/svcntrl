@@ -43,16 +43,16 @@ public class PendingCreateManager {
 
     public void startCreation(ServerPlayerEntity player, String projectName) {
         if (ProjectManager.getInstance().getProject(projectName) != null) {
-            player.sendMessage(Text.literal("A project with this name already exists.").formatted(Formatting.RED), false);
+            player.sendMessage(Text.translatable("svcntrl.msg.a_project_with_this_name_alrea").formatted(Formatting.RED), false);
             return;
         }
 
         pending.put(player.getUuid(), new PendingCreate(projectName, System.currentTimeMillis() + 60_000L));
         player.sendMessage(Text.literal("Started creation of project '" + projectName + "'.\n")
                 .formatted(Formatting.GREEN)
-                .append(Text.literal("Left/Right-click blocks to set Pos1/Pos2 with the wand item.\n")
+                .append(Text.translatable("svcntrl.msg.left_right_click_blocks_to_set")
                         .formatted(Formatting.YELLOW))
-                .append(Text.literal("(You have 1 minute before this cancels).")
+                .append(Text.translatable("svcntrl.msg.you_have_1_minute_before_this")
                         .formatted(Formatting.GRAY)), false);
     }
 
@@ -62,7 +62,7 @@ public class PendingCreateManager {
 
         if (System.currentTimeMillis() > state.expiryTime) {
             pending.remove(player.getUuid());
-            player.sendMessage(Text.literal("Project creation timed out.").formatted(Formatting.RED), false);
+            player.sendMessage(Text.translatable("svcntrl.msg.project_creation_timed_out").formatted(Formatting.RED), false);
             return false;
         }
 
@@ -82,7 +82,7 @@ public class PendingCreateManager {
 
         if (System.currentTimeMillis() > state.expiryTime) {
             pending.remove(player.getUuid());
-            player.sendMessage(Text.literal("Project creation timed out.").formatted(Formatting.RED), false);
+            player.sendMessage(Text.translatable("svcntrl.msg.project_creation_timed_out").formatted(Formatting.RED), false);
             return false;
         }
 
@@ -143,11 +143,11 @@ public class PendingCreateManager {
                 player.sendMessage(Text.literal("Project '" + state.projectName + "' created successfully and set as active!")
                         .formatted(Formatting.GREEN), false);
                 if (overlaps) {
-                    player.sendMessage(Text.literal("Warning: This project overlaps with another existing project. Operations on this project may be temporarily blocked if the other project is being saved or restored.")
+                    player.sendMessage(Text.translatable("svcntrl.msg.warning_this_project_overlaps")
                             .formatted(Formatting.YELLOW), false);
                 }
             } else {
-                player.sendMessage(Text.literal("Failed to create project. Name already exists.")
+                player.sendMessage(Text.translatable("svcntrl.msg.failed_to_create_project_name")
                         .formatted(Formatting.RED), false);
             }
         }

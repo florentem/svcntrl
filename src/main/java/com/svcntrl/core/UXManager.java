@@ -109,7 +109,7 @@ public class UXManager {
         if (tickCounter % 10 == 0) {
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                 if (PreviewManager.getInstance().hasPreview(player.getUuid())) {
-                    player.sendMessage(Text.literal("[!] You are in preview mode. Type /svcntrl preview stop").formatted(Formatting.AQUA, Formatting.BOLD), true);
+                    player.sendMessage(Text.translatable("svcntrl.msg.you_are_in_preview_mode_type_s").formatted(Formatting.AQUA, Formatting.BOLD), true);
                 }
             }
         }
@@ -120,9 +120,9 @@ public class UXManager {
                 if (raycastPlayers.contains(player.getUuid())) {
                     Project lookedAt = getProjectLookingAt(player);
                     if (lookedAt != null) {
-                        player.sendMessage(Text.literal("Looking at: ").formatted(Formatting.GRAY).append(Text.literal(lookedAt.getName()).formatted(Formatting.AQUA, Formatting.BOLD)).append(Text.literal(" (Click to select)").formatted(Formatting.YELLOW)), true);
+                        player.sendMessage(Text.translatable("svcntrl.msg.looking_at").formatted(Formatting.GRAY).append(Text.literal(lookedAt.getName()).formatted(Formatting.AQUA, Formatting.BOLD)).append(Text.translatable("svcntrl.msg.click_to_select").formatted(Formatting.YELLOW)), true);
                     } else {
-                        player.sendMessage(Text.literal("Looking at: ").formatted(Formatting.GRAY).append(Text.literal("None").formatted(Formatting.DARK_GRAY)), true);
+                        player.sendMessage(Text.translatable("svcntrl.msg.looking_at").formatted(Formatting.GRAY).append(Text.translatable("svcntrl.msg.none").formatted(Formatting.DARK_GRAY)), true);
                     }
                 }
             }

@@ -549,21 +549,21 @@ public class SvcntrlCommands {
                 return world;
             }
         }
-        source.sendError(Text.literal("World for project not found."));
+        source.sendError(Text.translatable("svcntrl.msg.world_for_project_not_found"));
         return null;
     }
 
     private static int executeHelp(ServerCommandSource source) {
-        source.sendFeedback(() -> Text.literal("=== Svcntrl Commands ===").formatted(Formatting.GOLD), false);
-        source.sendFeedback(() -> Text.literal("/svcntrl project create <name> - Create a project").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.literal("/svcntrl project remove <name> force - Delete a project permanently").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.literal("/svcntrl branch create <name> [--nosave] - Create a new branch").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.literal("/svcntrl branch checkout <name> [--nosave] - Switch to a branch").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.literal("/svcntrl branch list/delete - Manage branches").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.literal("/svcntrl save [desc] - Create a manual snapshot").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.literal("/svcntrl restore [manual|auto] <id> [--nosave] - Restore to a snapshot").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.literal("/svcntrl export <id> - Export snapshot to WorldEdit schematic").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.literal("/svcntrl pos1 / pos2 - Set positions for project creation").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_commands").formatted(Formatting.GOLD), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_project_create_name_cr").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_project_remove_name_fo").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_branch_create_name_nos").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_branch_checkout_name_n").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_branch_list_delete_man").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_save_desc_create_a_man").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_restore_manual_auto_id").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_export_id_export_snaps").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_pos1_pos2_set_position").formatted(Formatting.YELLOW), false);
         return 1;
     }
 
@@ -587,8 +587,8 @@ public class SvcntrlCommands {
 
     private static int executeCreate(ServerCommandSource source, String name) {
         ServerPlayerEntity player = source.getPlayer();
-        if (player == null) { source.sendError(Text.literal("This command can only be used by players.")); return 0; }
-        if (!isValidName(name)) { source.sendError(Text.literal("Invalid name. Use only letters, numbers, underscores, and hyphens (max 32 chars).")); return 0; }
+        if (player == null) { source.sendError(Text.translatable("svcntrl.msg.this_command_can_only_be_used")); return 0; }
+        if (!isValidName(name)) { source.sendError(Text.translatable("svcntrl.msg.invalid_name_use_only_letters")); return 0; }
         PendingCreateManager.getInstance().startCreation(player, name);
         return 1;
     }
@@ -597,8 +597,8 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project. Select one or use /svcntrl tp <name>")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project_select_one_o")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         return executeTp(source, project.getName());
     }
 
@@ -607,7 +607,7 @@ public class SvcntrlCommands {
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getProject(name);
         if (project == null) { source.sendError(Text.literal("Project not found: " + name)); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
 
         ServerWorld world = getProjectWorld(source, project);
         if (world == null) return 0;
@@ -626,14 +626,14 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getProject(name);
-        if (project == null) { source.sendError(Text.literal("Project not found.")); return 0; }
-        if (!project.isOwner(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("Only the project owner or admin can remove it.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.project_not_found")); return 0; }
+        if (!project.isOwner(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.only_the_project_owner_or_admi")); return 0; }
         if (!force) {
             source.sendError(Text.literal("Are you sure? Delete command: /svcntrl project remove " + name + " force"));
             return 0;
         }
         if (project.isLocked()) {
-            source.sendError(Text.literal("Cannot delete project: an operation is in progress."));
+            source.sendError(Text.translatable("svcntrl.msg.cannot_delete_project_an_opera"));
             return 0;
         }
         com.svcntrl.core.PreviewManager.getInstance().stopPreviewForProject(source.getServer(), name);
@@ -646,7 +646,7 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         UXManager.getInstance().setRaycasting(player.getUuid(), true);
-        source.sendFeedback(() -> Text.literal("Raycast selection mode enabled.").formatted(Formatting.GREEN), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.raycast_selection_mode_enabled").formatted(Formatting.GREEN), false);
         return 1;
     }
 
@@ -655,9 +655,9 @@ public class SvcntrlCommands {
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getProject(name);
         if (project == null) { source.sendError(Text.literal("Project '" + name + "' not found.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         ProjectManager.getInstance().setActiveProject(player.getUuid(), name);
-        source.sendFeedback(() -> Text.literal("Active project set to '").formatted(Formatting.GREEN).append(Text.literal(name).formatted(Formatting.GOLD)).append(Text.literal("'").formatted(Formatting.GREEN)), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.active_project_set_to").formatted(Formatting.GREEN).append(Text.literal(name).formatted(Formatting.GOLD)).append(Text.translatable("svcntrl.msg.").formatted(Formatting.GREEN)), false);
         return 1;
     }
 
@@ -665,7 +665,7 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project != null && !project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
+        if (project != null && !project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         boolean active = UXManager.getInstance().toggleOutline(player.getUuid());
         source.sendFeedback(() -> Text.literal("Project outline " + (active ? "enabled." : "disabled.")).formatted(Formatting.GREEN), false);
         return 1;
@@ -675,10 +675,10 @@ public class SvcntrlCommands {
         ServerPlayerEntity sender = source.getPlayer();
         if (sender == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(sender.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (!project.isOwner(sender.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("Only the owner or admin can trust players.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isOwner(sender.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.only_the_owner_or_admin_can_tr")); return 0; }
         java.util.Optional<com.mojang.authlib.GameProfile> profileOpt = source.getServer().getUserCache().findByName(playerName);
-        if (profileOpt.isEmpty()) { source.sendError(Text.literal("Player not found.")); return 0; }
+        if (profileOpt.isEmpty()) { source.sendError(Text.translatable("svcntrl.msg.player_not_found")); return 0; }
         UUID targetUuid = profileOpt.get().getId();
         if (project.addMember(targetUuid)) {
             ProjectManager.getInstance().saveProject(project);
@@ -691,10 +691,10 @@ public class SvcntrlCommands {
         ServerPlayerEntity sender = source.getPlayer();
         if (sender == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(sender.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (!project.isOwner(sender.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("Only the owner or admin can untrust players.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isOwner(sender.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.only_the_owner_or_admin_can_un")); return 0; }
         java.util.Optional<com.mojang.authlib.GameProfile> profileOpt = source.getServer().getUserCache().findByName(playerName);
-        if (profileOpt.isEmpty()) { source.sendError(Text.literal("Player not found.")); return 0; }
+        if (profileOpt.isEmpty()) { source.sendError(Text.translatable("svcntrl.msg.player_not_found")); return 0; }
         UUID targetUuid = profileOpt.get().getId();
         if (project.removeMember(targetUuid)) {
             ProjectManager.getInstance().saveProject(project);
@@ -707,9 +707,9 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
-        source.sendFeedback(() -> Text.literal("Branches for project '").append(Text.literal(project.getName()).formatted(Formatting.AQUA)).append(Text.literal("':")), false);
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.branches_for_project").append(Text.literal(project.getName()).formatted(Formatting.AQUA)).append(Text.translatable("svcntrl.msg.")), false);
         for (Project.Branch b : project.getBranches()) {
             boolean isCurrent = b.getName().equals(project.getCurrentBranchName());
             source.sendFeedback(() -> Text.literal((isCurrent ? " * " : "   ") + b.getName())
@@ -722,9 +722,9 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
         
         ServerWorld world = getProjectWorld(source, project);
         if (world == null) return 0;
@@ -737,11 +737,11 @@ public class SvcntrlCommands {
 
         int snapshotId = project.addManualSnapshot(branchName, description, player.getUuid(), player.getName().getString());
         
-        source.sendFeedback(() -> Text.literal("Saving project '").append(Text.literal(project.getName()).formatted(Formatting.AQUA)).append(Text.literal("'...")), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.saving_project").append(Text.literal(project.getName()).formatted(Formatting.AQUA)).append(Text.translatable("svcntrl.msg.")), false);
         
         AreaSerializer.saveAreaAsync(player, world, project, branchName, "manual", snapshotId, () -> {
             ProjectManager.getInstance().saveProject(project);
-            source.sendFeedback(() -> Text.literal("Project saved! Snapshot ID: ").formatted(Formatting.GREEN).append(Text.literal(String.valueOf(snapshotId)).formatted(Formatting.GOLD)), false);
+            source.sendFeedback(() -> Text.translatable("svcntrl.msg.project_saved_snapshot_id").formatted(Formatting.GREEN).append(Text.literal(String.valueOf(snapshotId)).formatted(Formatting.GOLD)), false);
         }, error -> {
             project.getBranch(branchName).removeManualSnapshot(snapshotId);
             source.sendError(Text.literal("Failed to save: " + error));
@@ -754,12 +754,12 @@ public class SvcntrlCommands {
         String name = nameArg.toLowerCase(java.util.Locale.ROOT);
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
-        if (!isValidName(name)) { source.sendError(Text.literal("Invalid branch name. Use only letters, numbers, underscores, and hyphens.")); return 0; }
+        if (!isValidName(name)) { source.sendError(Text.translatable("svcntrl.msg.invalid_branch_name_use_only_l")); return 0; }
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
-        if (project.hasBranch(name)) { source.sendError(Text.literal("Branch already exists.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (project.hasBranch(name)) { source.sendError(Text.translatable("svcntrl.msg.branch_already_exists")); return 0; }
         
         ServerWorld world = getProjectWorld(source, project);
         if (world == null) return 0;
@@ -774,7 +774,7 @@ public class SvcntrlCommands {
                 source.sendFeedback(() -> Text.literal("Branch '" + name + "' created. Saving initial commit...").formatted(Formatting.YELLOW), false);
                 int autoId = project.addAutoSnapshot(name, "Initial commit for branch " + name, player.getUuid(), player.getName().getString());
                 AreaSerializer.saveAreaAsync(player, world, project, name, "auto", autoId, () -> {
-                    source.sendFeedback(() -> Text.literal("Branch state saved.").formatted(Formatting.GREEN), false);
+                    source.sendFeedback(() -> Text.translatable("svcntrl.msg.branch_state_saved").formatted(Formatting.GREEN), false);
                     ProjectManager.getInstance().saveProject(project);
                 }, err -> {
                     project.setCurrentBranchName(fallbackBranch);
@@ -806,13 +806,13 @@ public class SvcntrlCommands {
         String name = nameArg.toLowerCase(java.util.Locale.ROOT);
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
-        if (!isValidName(name)) { source.sendError(Text.literal("Invalid branch name. Use only letters, numbers, underscores, and hyphens.")); return 0; }
+        if (!isValidName(name)) { source.sendError(Text.translatable("svcntrl.msg.invalid_branch_name_use_only_l")); return 0; }
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
-        if (!project.hasBranch(name)) { source.sendError(Text.literal("Branch not found.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (!project.hasBranch(name)) { source.sendError(Text.translatable("svcntrl.msg.branch_not_found")); return 0; }
         if (project.getCurrentBranchName().equals(name)) { source.sendError(Text.literal("Already on branch " + name)); return 0; }
-        if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
         
         ServerWorld world = getProjectWorld(source, project);
         if (world == null) return 0;
@@ -858,7 +858,7 @@ public class SvcntrlCommands {
             source.sendFeedback(() -> Text.literal("Restoring branch '" + name + "' state...").formatted(Formatting.YELLOW), false);
             boolean success = AreaSerializer.restoreArea(player, world, project, name, category, restoreId, false);
             if (!success) {
-                source.sendError(Text.literal("Failed to load branch data."));
+                source.sendError(Text.translatable("svcntrl.msg.failed_to_load_branch_data"));
             }
         };
 
@@ -885,13 +885,13 @@ public class SvcntrlCommands {
         String name = nameArg.toLowerCase(java.util.Locale.ROOT);
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
-        if (!isValidName(name)) { source.sendError(Text.literal("Invalid branch name. Use only letters, numbers, underscores, and hyphens.")); return 0; }
+        if (!isValidName(name)) { source.sendError(Text.translatable("svcntrl.msg.invalid_branch_name_use_only_l")); return 0; }
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
-        if (!project.isOwner(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("Only owner can delete branches.")); return 0; }
-        if (project.getCurrentBranchName().equals(name)) { source.sendError(Text.literal("Cannot delete current branch.")); return 0; }
-        if (!project.hasBranch(name)) { source.sendError(Text.literal("Branch not found.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (!project.isOwner(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.only_owner_can_delete_branches")); return 0; }
+        if (project.getCurrentBranchName().equals(name)) { source.sendError(Text.translatable("svcntrl.msg.cannot_delete_current_branch")); return 0; }
+        if (!project.hasBranch(name)) { source.sendError(Text.translatable("svcntrl.msg.branch_not_found")); return 0; }
         
         project.deleteBranch(name);
         ProjectManager.getInstance().deleteBranchDir(project, name);
@@ -904,9 +904,9 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
-        if (!project.isOwner(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access. Only the owner can delete snapshots.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (!project.isOwner(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access_only_the")); return 0; }
 
         Project.Branch branch = project.getBranch(project.getCurrentBranchName());
         java.util.List<Project.SnapshotMeta> snapshots = category.equals("manual") ? branch.getManualSnapshots() : branch.getAutoSnapshots();
@@ -920,7 +920,7 @@ public class SvcntrlCommands {
         }
         
         if (target == null) {
-            source.sendError(Text.literal("Snapshot not found."));
+            source.sendError(Text.translatable("svcntrl.msg.snapshot_not_found"));
             return 0;
         }
         
@@ -950,8 +950,8 @@ public class SvcntrlCommands {
         if (player == null) return 0;
 
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
 
         Project.Branch branch = project.getBranch(project.getCurrentBranchName());
         List<Project.SnapshotMeta> snapshots = "auto".equalsIgnoreCase(category) ? branch.getAutoSnapshots() : branch.getManualSnapshots();
@@ -967,7 +967,7 @@ public class SvcntrlCommands {
         if (page > totalPages) page = totalPages;
 
         final int finalPage = page;
-        source.sendFeedback(() -> Text.literal("=== Snapshots for ")
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.snapshots_for")
                 .append(Text.literal(project.getName()).formatted(Formatting.AQUA))
                 .append(Text.literal(" (" + branch.getName() + ") === Page " + finalPage + "/" + totalPages).formatted(Formatting.GRAY)), false);
 
@@ -982,12 +982,12 @@ public class SvcntrlCommands {
                     .append(Text.literal(" " + meta.getDescription()).formatted(Formatting.WHITE))
                     .append(Text.literal(" — " + meta.getAuthorName() + " " + time).formatted(Formatting.DARK_GRAY));
 
-            MutableText previewBtn = Text.literal(" [Preview]").formatted(Formatting.AQUA)
-                    .styled(style -> style.withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl preview start " + category + " " + meta.getId())).withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(Text.literal("Click to preview"))));
-            MutableText exportBtn = Text.literal(" [Export]").formatted(Formatting.LIGHT_PURPLE)
-                    .styled(style -> style.withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl export " + category + " " + meta.getId())).withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(Text.literal("Click to export"))));
-            MutableText restoreBtn = Text.literal(" [Restore]").formatted(Formatting.RED)
-                    .styled(style -> style.withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl restore " + category + " " + meta.getId())).withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(Text.literal("Click to restore"))));
+            MutableText previewBtn = Text.translatable("svcntrl.msg.preview").formatted(Formatting.AQUA)
+                    .styled(style -> style.withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl preview start " + category + " " + meta.getId())).withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(Text.translatable("svcntrl.msg.click_to_preview"))));
+            MutableText exportBtn = Text.translatable("svcntrl.msg.export").formatted(Formatting.LIGHT_PURPLE)
+                    .styled(style -> style.withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl export " + category + " " + meta.getId())).withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(Text.translatable("svcntrl.msg.click_to_export"))));
+            MutableText restoreBtn = Text.translatable("svcntrl.msg.restore").formatted(Formatting.RED)
+                    .styled(style -> style.withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl restore " + category + " " + meta.getId())).withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(Text.translatable("svcntrl.msg.click_to_restore"))));
 
             entry.append(previewBtn).append(exportBtn).append(restoreBtn);
             source.sendFeedback(() -> entry, false);
@@ -1000,12 +1000,12 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         ServerWorld world = getProjectWorld(source, project);
         if (world == null) return 0;
 
-        if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
 
         String currentBranch = project.getCurrentBranchName();
         String targetBranch = (branchArg != null && !branchArg.isEmpty()) ? branchArg.toLowerCase(java.util.Locale.ROOT) : currentBranch;
@@ -1019,14 +1019,14 @@ public class SvcntrlCommands {
 
         if (!noSave && com.svcntrl.config.SvcntrlConfig.getInstance().autoSaveOnRestore) {
             int autoId = project.addAutoSnapshot(currentBranch, "Auto-save before restore to " + targetBranch + ":" + id, player.getUuid(), player.getName().getString());
-            source.sendFeedback(() -> Text.literal("Creating auto-save before restore...").formatted(Formatting.YELLOW), false);
+            source.sendFeedback(() -> Text.translatable("svcntrl.msg.creating_auto_save_before_rest").formatted(Formatting.YELLOW), false);
             AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", autoId, () -> {
                 project.trimAutoSnapshots(currentBranch, (category.equals("auto") && targetBranch.equals(currentBranch)) ? new int[]{id} : new int[0]);
                 boolean success = AreaSerializer.restoreArea(player, world, project, targetBranch, category, id, excludeIntersections);
                 if (success) {
                     ProjectManager.getInstance().saveProject(project);
                 } else {
-                    source.sendError(Text.literal("Failed to restore. Snapshot missing."));
+                    source.sendError(Text.translatable("svcntrl.msg.failed_to_restore_snapshot_mis"));
                 }
             }, err -> {
                 project.getBranch(currentBranch).removeAutoSnapshot(autoId);
@@ -1035,7 +1035,7 @@ public class SvcntrlCommands {
         } else {
             boolean success = AreaSerializer.restoreArea(player, world, project, targetBranch, category, id, excludeIntersections);
             if (!success) {
-                source.sendError(Text.literal("Failed to restore. Snapshot missing."));
+                source.sendError(Text.translatable("svcntrl.msg.failed_to_restore_snapshot_mis"));
             }
         }
         return 1;
@@ -1045,27 +1045,27 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         ServerWorld world = getProjectWorld(source, project);
         if (world == null) return 0;
 
-        if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
 
         String branchName = project.getCurrentBranchName();
 
         if (!noSave && com.svcntrl.config.SvcntrlConfig.getInstance().autoSaveOnRestore) {
             int autoId = project.addAutoSnapshot(branchName, "Auto-save before patch restore (Target: " + targetId + ", Base: " + baseId + ")", player.getUuid(), player.getName().getString());
-            source.sendFeedback(() -> Text.literal("Creating auto-save before patch restore...").formatted(Formatting.YELLOW), false);
+            source.sendFeedback(() -> Text.translatable("svcntrl.msg.creating_auto_save_before_patc").formatted(Formatting.YELLOW), false);
             
             AreaSerializer.saveAreaAsync(player, world, project, branchName, "auto", autoId, () -> {
                 project.trimAutoSnapshots(branchName, category.equals("auto") ? new int[]{targetId, baseId} : new int[0]);
                 boolean success = AreaSerializer.restorePatchArea(player, world, project, branchName, category, targetId, branchName, category, baseId, excludeIntersections);
                 if (success) {
-                    source.sendFeedback(() -> Text.literal("Applying patch (Entities fully replaced)...").formatted(Formatting.GREEN), false);
+                    source.sendFeedback(() -> Text.translatable("svcntrl.msg.applying_patch_entities_fully").formatted(Formatting.GREEN), false);
                     ProjectManager.getInstance().saveProject(project);
                 } else {
-                    source.sendError(Text.literal("Failed to apply patch. Snapshots missing."));
+                    source.sendError(Text.translatable("svcntrl.msg.failed_to_apply_patch_snapshot"));
                 }
             }, err -> {
                 project.getBranch(branchName).removeAutoSnapshot(autoId);
@@ -1074,10 +1074,10 @@ public class SvcntrlCommands {
         } else {
             boolean success = AreaSerializer.restorePatchArea(player, world, project, branchName, category, targetId, branchName, category, baseId, excludeIntersections);
             if (success) {
-                source.sendFeedback(() -> Text.literal("Applying patch (Entities fully replaced)...").formatted(Formatting.GREEN), false);
+                source.sendFeedback(() -> Text.translatable("svcntrl.msg.applying_patch_entities_fully").formatted(Formatting.GREEN), false);
                 ProjectManager.getInstance().saveProject(project);
             } else {
-                source.sendError(Text.literal("Failed to apply patch. Snapshots missing."));
+                source.sendError(Text.translatable("svcntrl.msg.failed_to_apply_patch_snapshot"));
             }
         }
         return 1;
@@ -1089,27 +1089,27 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         
         ServerWorld world = getProjectWorld(source, project);
         if (world == null) return 0;
 
-        if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
 
         String currentBranch = project.getCurrentBranchName();
         if (!noSave && com.svcntrl.config.SvcntrlConfig.getInstance().autoSaveOnRestore) {
             int autoId = project.addAutoSnapshot(currentBranch, "Auto-save before cross patch (Target: " + targetBranch + ":" + targetId + " Base: " + baseBranch + ":" + baseId + ")", player.getUuid(), player.getName().getString());
-            source.sendFeedback(() -> Text.literal("Creating auto-save before cross patch...").formatted(Formatting.YELLOW), false);
+            source.sendFeedback(() -> Text.translatable("svcntrl.msg.creating_auto_save_before_cros").formatted(Formatting.YELLOW), false);
             
             AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", autoId, () -> {
                 project.trimAutoSnapshots(currentBranch, category.equals("auto") ? new int[]{targetBranch.equals(currentBranch) ? targetId : -1, baseBranch.equals(currentBranch) ? baseId : -1} : new int[0]);
                 boolean success = AreaSerializer.restorePatchArea(player, world, project, targetBranch, category, targetId, baseBranch, category, baseId, excludeIntersections);
                 if (success) {
-                    source.sendFeedback(() -> Text.literal("Cross patch applied successfully! (Entities fully replaced)").formatted(Formatting.GREEN), false);
+                    source.sendFeedback(() -> Text.translatable("svcntrl.msg.cross_patch_applied_successful").formatted(Formatting.GREEN), false);
                     ProjectManager.getInstance().saveProject(project);
                 } else {
-                    source.sendError(Text.literal("Failed to apply patch. Snapshots missing."));
+                    source.sendError(Text.translatable("svcntrl.msg.failed_to_apply_patch_snapshot"));
                 }
             }, err -> {
                 project.getBranch(currentBranch).removeAutoSnapshot(autoId);
@@ -1119,10 +1119,10 @@ public class SvcntrlCommands {
         } else {
             boolean success = AreaSerializer.restorePatchArea(player, world, project, targetBranch, category, targetId, baseBranch, category, baseId, excludeIntersections);
             if (success) {
-                source.sendFeedback(() -> Text.literal("Cross patch applied successfully! (Entities fully replaced)").formatted(Formatting.GREEN), false);
+                source.sendFeedback(() -> Text.translatable("svcntrl.msg.cross_patch_applied_successful").formatted(Formatting.GREEN), false);
                 ProjectManager.getInstance().saveProject(project);
             } else {
-                source.sendError(Text.literal("Failed to apply patch. Snapshots missing."));
+                source.sendError(Text.translatable("svcntrl.msg.failed_to_apply_patch_snapshot"));
             }
         }
         return 1;
@@ -1132,9 +1132,9 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
 
         String targetBranch = (branchArg != null && !branchArg.isEmpty()) ? branchArg.toLowerCase(java.util.Locale.ROOT) : project.getCurrentBranchName();
         if (!project.hasBranch(targetBranch)) { source.sendError(Text.literal("Branch not found: " + targetBranch)); return 0; }
@@ -1147,11 +1147,11 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         if (!PreviewManager.getInstance().hasPreview(player.getUuid())) {
-            source.sendError(Text.literal("Not previewing."));
+            source.sendError(Text.translatable("svcntrl.msg.not_previewing"));
             return 0;
         }
         PreviewManager.getInstance().stopPreview(player);
-        source.sendFeedback(() -> Text.literal("Preview stopped.").formatted(Formatting.GRAY), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.preview_stopped").formatted(Formatting.GRAY), false);
         return 1;
     }
 
@@ -1159,9 +1159,9 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         
         String targetBranch = (branchArg != null && !branchArg.isEmpty()) ? branchArg.toLowerCase(java.util.Locale.ROOT) : project.getCurrentBranchName();
         if (!project.hasBranch(targetBranch)) { source.sendError(Text.literal("Branch not found: " + targetBranch)); return 0; }
@@ -1174,9 +1174,9 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         
         String targetBranch = (branchArg != null && !branchArg.isEmpty()) ? branchArg.toLowerCase(java.util.Locale.ROOT) : project.getCurrentBranchName();
         if (!project.hasBranch(targetBranch)) { source.sendError(Text.literal("Branch not found: " + targetBranch)); return 0; }
@@ -1191,9 +1191,9 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.literal("No active project.")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
 
         ExportManager.exportDiff(project, targetBranch, category, targetId, baseBranch, category, baseId, player);
         return 1;
@@ -1204,15 +1204,15 @@ public class SvcntrlCommands {
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) return 0;
-        if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
+        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         ExportManager.exportProjectFull(project, player);
         return 1;
     }
 
     private static int executeReload(ServerCommandSource source) {
         com.svcntrl.config.SvcntrlConfig.load();
-        source.sendFeedback(() -> Text.literal("Svcntrl config reloaded!").formatted(Formatting.GREEN), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_config_reloaded").formatted(Formatting.GREEN), false);
         return 1;
     }
 
@@ -1222,7 +1222,7 @@ public class SvcntrlCommands {
         
         java.nio.file.Path file = com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid());
         if (file == null || !java.nio.file.Files.exists(file)) {
-            source.sendError(Text.literal("No valid export file pending for upload."));
+            source.sendError(Text.translatable("svcntrl.msg.no_valid_export_file_pending_f"));
             return 0;
         }
 

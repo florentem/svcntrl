@@ -131,7 +131,7 @@ public class PreviewManager {
         }
 
         pendingPreviews.add(player.getUuid());
-        player.sendMessage(net.minecraft.text.Text.literal("Loading snapshot for preview...").formatted(net.minecraft.util.Formatting.YELLOW));
+        player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.loading_snapshot_for_preview").formatted(net.minecraft.util.Formatting.YELLOW));
         
         java.util.concurrent.CompletableFuture.supplyAsync(() -> {
             return AreaSerializer.readSnapshot(project, branchName, category, snapshotId);
@@ -139,7 +139,7 @@ public class PreviewManager {
             player.getServer().execute(() -> {
                 pendingPreviews.remove(player.getUuid());
                 if (root == null) {
-                    player.sendMessage(net.minecraft.text.Text.literal("Failed to load snapshot for preview.").formatted(net.minecraft.util.Formatting.RED));
+                    player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_load_snapshot_for_pr").formatted(net.minecraft.util.Formatting.RED));
                     return;
                 }
 
@@ -354,7 +354,7 @@ public class PreviewManager {
                 if (currentIndex >= totalBlocks) {
                     phase = 1;
                     currentIndex = 0;
-                    player.sendMessage(net.minecraft.text.Text.literal("Loading Preview: 100.0%").formatted(net.minecraft.util.Formatting.GREEN), true);
+                    player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.loading_preview_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
                 }
                 return false;
             }
@@ -446,7 +446,7 @@ public class PreviewManager {
                 }
             }
             if (showProgress) {
-                player.sendMessage(net.minecraft.text.Text.literal("Clearing Preview: 100.0%").formatted(net.minecraft.util.Formatting.GREEN), true);
+                player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.clearing_preview_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
             }
             return true;
         }

@@ -18,6 +18,7 @@ public class SvcntrlConfig {
     public String outlineParticle = "minecraft:flame";
     public int outlineFrequencyTicks = 15;
     public boolean allowPublicExport = false;
+    public String customExportEndpoint = "";
     public long taskBudgetNs = 25_000_000L;
     public int maxRegionVolume = 5_000_000;
     public String[] raycastParticlePool = new String[]{
@@ -43,6 +44,7 @@ public class SvcntrlConfig {
                     // Validate and apply defaults for null fields
                     if (loaded.outlineParticle == null) loaded.outlineParticle = "minecraft:flame";
                     if (loaded.outlineFrequencyTicks <= 0) loaded.outlineFrequencyTicks = 15;
+                    if (loaded.customExportEndpoint == null) loaded.customExportEndpoint = "";
                     if (loaded.maxRegionVolume <= 0) loaded.maxRegionVolume = 5_000_000;
                     if (loaded.raycastParticlePool == null || loaded.raycastParticlePool.length == 0) {
                         loaded.raycastParticlePool = new SvcntrlConfig().raycastParticlePool;

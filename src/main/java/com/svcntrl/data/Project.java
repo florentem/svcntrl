@@ -115,12 +115,15 @@ public class Project {
             if (toRemove == null) break;
             
             branch.autoSnapshots.remove(toRemove);
-            try {
-                java.nio.file.Path snapshotFile = ProjectManager.getInstance().getSnapshotPath(this, branchName, "auto", toRemove.getId());
-                java.nio.file.Files.deleteIfExists(snapshotFile);
-            } catch (Exception e) {
-                com.svcntrl.SvcntrlMod.LOGGER.error("Failed to delete old auto snapshot file: " + toRemove.getId(), e);
-            }
+            final SnapshotMeta finalToRemove = toRemove;
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    java.nio.file.Path snapshotFile = ProjectManager.getInstance().getSnapshotPath(this, branchName, "auto", finalToRemove.getId());
+                    java.nio.file.Files.deleteIfExists(snapshotFile);
+                } catch (Exception e) {
+                    com.svcntrl.SvcntrlMod.LOGGER.error("Failed to delete old auto snapshot file: " + finalToRemove.getId(), e);
+                }
+            });
         }
     }
 
