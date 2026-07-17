@@ -53,7 +53,7 @@ public class SvcntrlCommands {
                 // /svcntrl project ...
                 .then(literal("project")
                     .then(literal("list").requires(requirePerm("svcntrl.command.project.list"))
-                        .executes(ctx -> executeProjectList(ctx.getSource())))
+                        .executes(ctx -> executeProjectList(ctx.getSource(), 1)))
                     .then(literal("create").requires(requirePerm("svcntrl.command.project.create"))
                         .then(argument("name", StringArgumentType.word())
                             .executes(ctx -> executeCreate(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))

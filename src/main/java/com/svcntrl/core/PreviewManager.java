@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 
 public class PreviewManager {
     private static final PreviewManager INSTANCE = new PreviewManager();
@@ -33,6 +34,8 @@ public class PreviewManager {
     // Map of Player UUID -> Map of ChunkPos -> Map of BlockPos to Preview BlockState
     private final Map<UUID, Map<net.minecraft.util.math.ChunkPos, Map<BlockPos, BlockState>>> activePreviews = new ConcurrentHashMap<>();
     private final Map<UUID, java.util.Set<Integer>> activePreviewEntities = new ConcurrentHashMap<>();
+    private final Map<UUID, Set<Integer>> playerHiddenEntities = new ConcurrentHashMap<>();
+    private static final java.util.concurrent.atomic.AtomicInteger PREVIEW_ENTITY_IDS = new java.util.concurrent.atomic.AtomicInteger(-1000000);
     private final Map<UUID, String> previewingProjects = new ConcurrentHashMap<>();
     private final Map<UUID, net.minecraft.util.math.Box> previewBoundingBoxes = new ConcurrentHashMap<>();
     private final java.util.Set<UUID> pendingPreviews = ConcurrentHashMap.newKeySet();
@@ -369,26 +372,37 @@ public class PreviewManager {
                     double absY = min.getY() + entityNbt.getDouble("svcntrl_RelY", 0.0);
                     double absZ = min.getZ() + entityNbt.getDouble("svcntrl_RelZ", 0.0);
 
-                    EntityType.loadEntityWithPassengers(entityNbt, world, SpawnReason.STRUCTURE, (entity) -> {
-                        entity.setPosition(absX, absY, absZ);
-                        entity.setUuid(UUID.randomUUID());
-                        int fakeId = net.minecraft.entity.Entity.nextEntityId() * -1;
-                        if (fakeId > 0) fakeId = -fakeId; // Just to be safe it's negative
-                        entity.setId(fakeId);
-                        
-                        player.networkHandler.sendPacket(new EntitySpawnS2CPacket(
-                            entity.getId(), entity.getUuid(),
-                            entity.getX(), entity.getY(), entity.getZ(),
-                            entity.getPitch(), entity.getYaw(),
-                            entity.getType(), 0, entity.getVelocity(), entity.getHeadYaw()
-                        ));
-                        
-                        if (entity.getDataTracker().getChangedEntries() != null) {
-                            player.networkHandler.sendPacket(new EntityTrackerUpdateS2CPacket(entity.getId(), entity.getDataTracker().getChangedEntries()));
+                    String idStr = entityNbt.getString("id").orElse("");
+                    if (idStr != null && !idStr.isEmpty()) {
+                        EntityType<?> type = net.minecraft.registry.Registries.ENTITY_TYPE.get(net.minecraft.util.Identifier.tryParse(idStr));
+                        if (type != null) {
+                            
+                            int fakeId = PREVIEW_ENTITY_IDS.decrementAndGet();
+                            UUID fakeUuid = UUID.randomUUID();
+                            
+                            float yaw = 0f;
+                            float pitch = 0f;
+                            if (entityNbt.contains("Rotation")) {
+                                net.minecraft.nbt.NbtList rotation = entityNbt.getList("Rotation").orElse(new net.minecraft.nbt.NbtList());
+                                yaw = rotation.getFloat(0).orElse(0f);
+                                pitch = rotation.getFloat(1).orElse(0f);
+                            }
+                            
+                            net.minecraft.util.math.Vec3d vel = net.minecraft.util.math.Vec3d.ZERO;
+                            if (entityNbt.contains("Motion")) {
+                                net.minecraft.nbt.NbtList motion = entityNbt.getList("Motion").orElse(new net.minecraft.nbt.NbtList());
+                                vel = new net.minecraft.util.math.Vec3d(motion.getDouble(0).orElse(0.0), motion.getDouble(1).orElse(0.0), motion.getDouble(2).orElse(0.0));
+                            }
+                            
+                            player.networkHandler.sendPacket(new EntitySpawnS2CPacket(
+                                fakeId, fakeUuid,
+                                absX, absY, absZ,
+                                pitch, yaw,
+                                type, 0, vel, yaw
+                            ));
+                            spawnedEntityIds.add(fakeId);
                         }
-                        spawnedEntityIds.add(entity.getId());
-                        return entity;
-                    });
+                    }
                     currentIndex++;
                     ops++;
                     
