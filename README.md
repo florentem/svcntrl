@@ -11,8 +11,9 @@ svcntrl uses a straightforward snapshot system designed specifically to handle l
 ### Projects & Selection
 Everything starts with a **Project** (a cubic region in the world). You can freely create overlapping or nested projects to organize your builds (e.g., placing a redstone machine "sub-project" inside a larger city "project").
 - `/svcntrl project create <name>` - Create a new project.
-- `/svcntrl select <name>` - Set your active project.
-- `/svcntrl select raycast` - Look at a project and right-click to select it visually.
+- `/svcntrl project tp <name>` - Teleport to and select a project.
+- `/svcntrl project select <name>` - Set your active project manually.
+- `/svcntrl project select raycast` - Look at a project and right-click to select it visually.
 - `/svcntrl outline` - Toggle particle borders for your active project.
 
 *(Other project commands: `/svcntrl project list`, `remove`)*

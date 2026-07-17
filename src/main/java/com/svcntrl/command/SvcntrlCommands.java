@@ -71,6 +71,17 @@ public class SvcntrlCommands {
                         .then(argument("player", StringArgumentType.word())
                             .suggests((ctx, builder) -> suggestMembers(ctx, builder))
                             .executes(ctx -> executeUntrust(ctx.getSource(), StringArgumentType.getString(ctx, "player")))))
+                    .then(literal("tp").requires(requirePerm("svcntrl.command.project.tp"))
+                        .executes(ctx -> executeTpActive(ctx.getSource()))
+                        .then(argument("name", StringArgumentType.word())
+                            .suggests((ctx, builder) -> suggestProjects(ctx, builder))
+                            .executes(ctx -> executeTp(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))
+                    .then(literal("select").requires(requirePerm("svcntrl.command.project.select"))
+                        .then(literal("raycast")
+                            .executes(ctx -> executeSelectRaycast(ctx.getSource())))
+                        .then(argument("name", StringArgumentType.word())
+                            .suggests((ctx, builder) -> suggestProjects(ctx, builder))
+                            .executes(ctx -> executeSelect(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))
                 )
 
                 // /svcntrl branch ...
@@ -104,18 +115,6 @@ public class SvcntrlCommands {
                 .then(literal("reload").requires(requirePerm("svcntrl.command.reload"))
                     .executes(ctx -> executeReload(ctx.getSource())))
 
-                .then(literal("tp").requires(requirePerm("svcntrl.command.tp"))
-                    .executes(ctx -> executeTpActive(ctx.getSource()))
-                    .then(argument("name", StringArgumentType.word())
-                        .suggests((ctx, builder) -> suggestProjects(ctx, builder))
-                        .executes(ctx -> executeTp(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))
-
-                .then(literal("select").requires(requirePerm("svcntrl.command.select"))
-                    .then(literal("raycast")
-                        .executes(ctx -> executeSelectRaycast(ctx.getSource())))
-                    .then(argument("name", StringArgumentType.word())
-                        .suggests((ctx, builder) -> suggestProjects(ctx, builder))
-                        .executes(ctx -> executeSelect(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))
 
                 .then(literal("save").requires(requirePerm("svcntrl.command.save"))
                     .executes(ctx -> executeSave(ctx.getSource(), ""))
