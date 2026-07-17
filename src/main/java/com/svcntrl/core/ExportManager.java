@@ -772,9 +772,9 @@ public class ExportManager {
                 if (dlUrl != null) {
                     final String finalDlUrl = dlUrl;
                     if (player != null) {
-                        player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.export_uploaded_download_link_")
+                        player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.export_uploaded_download_link")
                                 .formatted(net.minecraft.util.Formatting.GREEN)
-                                .append(net.minecraft.text.Text.translatable("svcntrl.msg._download_")
+                                .append(net.minecraft.text.Text.translatable("svcntrl.msg.download")
                                         .formatted(net.minecraft.util.Formatting.GOLD)
                                         .styled(s -> {
                                             try {

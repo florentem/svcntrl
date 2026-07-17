@@ -166,23 +166,31 @@ public class UXManager {
         int maxY = Math.max(pos1.getY(), pos2.getY()) + 1;
         int maxZ = Math.max(pos1.getZ(), pos2.getZ()) + 1;
 
-        double step = 2.0;
+        double lengthX = maxX - minX;
+        double lengthY = maxY - minY;
+        double lengthZ = maxZ - minZ;
+
+        double maxParticlesPerEdge = 50.0;
+        
+        double stepX = Math.max(2.0, lengthX / maxParticlesPerEdge);
+        double stepY = Math.max(2.0, lengthY / maxParticlesPerEdge);
+        double stepZ = Math.max(2.0, lengthZ / maxParticlesPerEdge);
 
         // Bottom and Top rects
-        for (double x = minX; x <= maxX; x += step) {
+        for (double x = minX; x <= maxX; x += stepX) {
             sendParticle(player, x, minY, minZ, particleStr);
             sendParticle(player, x, minY, maxZ, particleStr);
             sendParticle(player, x, maxY, minZ, particleStr);
             sendParticle(player, x, maxY, maxZ, particleStr);
         }
-        for (double z = minZ; z <= maxZ; z += step) {
+        for (double z = minZ; z <= maxZ; z += stepZ) {
             sendParticle(player, minX, minY, z, particleStr);
             sendParticle(player, maxX, minY, z, particleStr);
             sendParticle(player, minX, maxY, z, particleStr);
             sendParticle(player, maxX, maxY, z, particleStr);
         }
         // Vertical lines
-        for (double y = minY; y <= maxY; y += step) {
+        for (double y = minY; y <= maxY; y += stepY) {
             sendParticle(player, minX, y, minZ, particleStr);
             sendParticle(player, maxX, y, minZ, particleStr);
             sendParticle(player, minX, y, maxZ, particleStr);

@@ -797,7 +797,10 @@ public class SvcntrlCommands {
                 String currentBranch = project.getCurrentBranchName();
                 source.sendFeedback(() -> Text.literal("Saving current state to branch '" + currentBranch + "' before branch creation...").formatted(Formatting.YELLOW), false);
                 int currentAutoId = project.addAutoSnapshot(currentBranch, "Auto-save before creating branch " + name, player.getUuid(), player.getName().getString());
-                AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", currentAutoId, createInitialCommit, err -> {
+                AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", currentAutoId, () -> {
+                    project.trimAutoSnapshots(currentBranch);
+                    createInitialCommit.run();
+                }, err -> {
                     source.sendError(Text.literal("Failed to save current branch state: " + err));
                 });
             } else {
