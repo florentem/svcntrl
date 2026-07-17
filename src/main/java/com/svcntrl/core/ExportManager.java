@@ -81,13 +81,13 @@ public class ExportManager {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             PaletteEntry that = (PaletteEntry) o;
-            return name.equals(that.name) && properties.equals(that.properties);
+            return name.equals(that.name) && java.util.Objects.equals(properties, that.properties);
         }
 
         @Override
         public int hashCode() {
             int result = name.hashCode();
-            result = 31 * result + properties.hashCode();
+            result = 31 * result + (properties != null ? properties.hashCode() : 0);
             return result;
         }
     }
@@ -130,7 +130,7 @@ public class ExportManager {
                 longArray[endArrIndex] = longArray[endArrIndex] >>> j1 << j1 | (value & maxEntryValue) >> endOffset;
             }
         }
-        if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.packing_blocks_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
+        if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.packing_blocks_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
         return longArray;
     }
 
@@ -166,7 +166,7 @@ public class ExportManager {
                             uploadToTmpfiles(zipPath, player);
                         } catch (Throwable e) {
                             SvcntrlMod.LOGGER.error("Export zip failed", e);
-                            if (player != null) player.sendMessage(Text.translatable("svcntrl.msg.failed_to_create_zip_check_log").formatted(Formatting.RED), false);
+                            if (player != null && !player.isDisconnected()) player.sendMessage(Text.translatable("svcntrl.msg.failed_to_create_zip_check_log").formatted(Formatting.RED), false);
                         }
                     });
                 } else {
@@ -194,7 +194,7 @@ public class ExportManager {
                 String fileName = project.getName() + "_full.zip";
                 Path zipPath = exportDir.resolve(fileName);
 
-                if (player != null) player.sendMessage(Text.translatable("svcntrl.msg.converting_and_packing_full_pr")
+                if (player != null && !player.isDisconnected()) player.sendMessage(Text.translatable("svcntrl.msg.converting_and_packing_full_pr")
                         .formatted(Formatting.YELLOW), false);
 
                 try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath));
@@ -341,7 +341,7 @@ public class ExportManager {
                     blockEntitiesOut.add(beOut);
                 }
             }
-            if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.converting_v1_blocks_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
+            if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.converting_v1_blocks_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
         }
 
         int totalBlocks = 0;
@@ -446,7 +446,7 @@ public class ExportManager {
                     return;
                 }
 
-                if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.calculating_diff_and_generatin")
+                if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.calculating_diff_and_generatin")
                         .formatted(net.minecraft.util.Formatting.YELLOW), false);
 
                 NbtCompound targetRoot = net.minecraft.nbt.NbtIo.readCompressed(targetPath, net.minecraft.nbt.NbtSizeTracker.of(512L * 1024L * 1024L));
@@ -478,7 +478,7 @@ public class ExportManager {
                             uploadToTmpfiles(zipPath, player);
                         } catch (Throwable e) {
                             SvcntrlMod.LOGGER.error("Diff zip failed", e);
-                            if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_create_zip_check_log").formatted(net.minecraft.util.Formatting.RED), false);
+                            if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_create_zip_check_log").formatted(net.minecraft.util.Formatting.RED), false);
                         }
                     });
                 } else {
@@ -497,7 +497,7 @@ public class ExportManager {
         boolean isV2Base = baseRoot.contains("Version") && baseRoot.getInt("Version", 1) == 2;
         
         if (!isV2Target || !isV2Base) {
-            if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.diff_export_currently_only_sup").formatted(net.minecraft.util.Formatting.RED), false);
+            if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.diff_export_currently_only_sup").formatted(net.minecraft.util.Formatting.RED), false);
             return null;
         }
 
@@ -507,7 +507,7 @@ public class ExportManager {
             targetRoot.getInt("MaxY", 0) != baseRoot.getInt("MaxY", 0) ||
             targetRoot.getInt("MinZ", 0) != baseRoot.getInt("MinZ", 0) ||
             targetRoot.getInt("MaxZ", 0) != baseRoot.getInt("MaxZ", 0)) {
-            if (player != null) player.sendMessage(net.minecraft.text.Text.literal("Cannot diff export: Target and Base snapshots have different dimensions!").formatted(net.minecraft.util.Formatting.RED), false);
+            if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.literal("Cannot diff export: Target and Base snapshots have different dimensions!").formatted(net.minecraft.util.Formatting.RED), false);
             return null;
         }
 
@@ -781,7 +781,7 @@ public class ExportManager {
 
                 if (dlUrl != null) {
                     final String finalDlUrl = dlUrl;
-                    if (player != null) {
+                    if (player != null && !player.isDisconnected()) {
                         player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.export_uploaded_download_link")
                                 .formatted(net.minecraft.util.Formatting.GREEN)
                                 .append(net.minecraft.text.Text.translatable("svcntrl.msg.download")
@@ -801,14 +801,14 @@ public class ExportManager {
                         Files.deleteIfExists(zipPath.getParent().resolve(base));
                     } catch (Exception ignored) {}
                 } else {
-                    if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_upload_unrecognized").formatted(net.minecraft.util.Formatting.RED), false);
+                    if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_upload_unrecognized").formatted(net.minecraft.util.Formatting.RED), false);
                 }
             } else {
-                if (player != null) player.sendMessage(net.minecraft.text.Text.literal("Upload failed (HTTP " + response.statusCode() + ")").formatted(net.minecraft.util.Formatting.RED), false);
+                if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.literal("Upload failed (HTTP " + response.statusCode() + ")").formatted(net.minecraft.util.Formatting.RED), false);
             }
         } catch (Exception e) {
             com.svcntrl.SvcntrlMod.LOGGER.error("Failed to upload export to tmpfiles.org", e);
-            if (player != null) player.sendMessage(net.minecraft.text.Text.literal("Upload error: " + e.getMessage()).formatted(net.minecraft.util.Formatting.RED), false);
+            if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.literal("Upload error: " + e.getMessage()).formatted(net.minecraft.util.Formatting.RED), false);
         } finally {
             if (tempFile != null) {
                 try {

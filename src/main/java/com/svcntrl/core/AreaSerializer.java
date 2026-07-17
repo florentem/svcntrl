@@ -85,13 +85,13 @@ public class AreaSerializer {
                     } catch (Throwable t) {
                         SvcntrlMod.LOGGER.error("[svcntrl] Failed to schedule restore task", t);
                         ProjectManager.getInstance().setProjectLocked(project, false);
-                        if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_schedule_restore").formatted(net.minecraft.util.Formatting.RED));
+                        if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_schedule_restore").formatted(net.minecraft.util.Formatting.RED));
                     }
                 });
             } catch (Throwable e) {
                 SvcntrlMod.LOGGER.error("[svcntrl] Failed to read snapshot file: {}", filePath, e);
                 ProjectManager.getInstance().setProjectLocked(project, false);
-                if (player != null) {
+                if (player != null && !player.isDisconnected()) {
                     player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_read_snapshot_file").formatted(net.minecraft.util.Formatting.RED));
                 }
             }
@@ -118,7 +118,7 @@ public class AreaSerializer {
                 boolean isV2Base = baseRoot.contains("Version") && baseRoot.getInt("Version", 1) == 2;
                 if (!isV2Target || !isV2Base) {
                     ProjectManager.getInstance().setProjectLocked(project, false);
-                    if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.patch_restore_only_supports_v2").formatted(net.minecraft.util.Formatting.RED));
+                    if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.patch_restore_only_supports_v2").formatted(net.minecraft.util.Formatting.RED));
                     return;
                 }
 
@@ -129,7 +129,7 @@ public class AreaSerializer {
                     targetRoot.getInt("MinZ", 0) != baseRoot.getInt("MinZ", 0) ||
                     targetRoot.getInt("MaxZ", 0) != baseRoot.getInt("MaxZ", 0)) {
                     ProjectManager.getInstance().setProjectLocked(project, false);
-                    if (player != null) player.sendMessage(net.minecraft.text.Text.literal("Cannot patch restore: Target and Base snapshots have different dimensions!").formatted(net.minecraft.util.Formatting.RED), false);
+                    if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.literal("Cannot patch restore: Target and Base snapshots have different dimensions!").formatted(net.minecraft.util.Formatting.RED), false);
                     return;
                 }
 
@@ -228,13 +228,13 @@ public class AreaSerializer {
                     } catch (Throwable t) {
                         SvcntrlMod.LOGGER.error("[svcntrl] Failed to schedule patch task", t);
                         ProjectManager.getInstance().setProjectLocked(project, false);
-                        if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_schedule_patch_resto").formatted(net.minecraft.util.Formatting.RED));
+                        if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_schedule_patch_resto").formatted(net.minecraft.util.Formatting.RED));
                     }
                 });
             } catch (Throwable e) {
                 SvcntrlMod.LOGGER.error("[svcntrl] Failed to read patch files", e);
                 ProjectManager.getInstance().setProjectLocked(project, false);
-                if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_read_snapshots_for_p").formatted(net.minecraft.util.Formatting.RED));
+                if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_read_snapshots_for_p").formatted(net.minecraft.util.Formatting.RED));
             }
         });
         return true;
@@ -391,7 +391,7 @@ public class AreaSerializer {
                     currentIndex++;
                     ops++;
                     if ((ops & 0xF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) {
-                        if (player != null) {
+                        if (player != null && !player.isDisconnected()) {
                             long now = System.currentTimeMillis();
                             if (now - lastMessageTime > 500) {
                                 float percent = (float) currentIndex / totalChunks * 100f;
@@ -510,7 +510,7 @@ public class AreaSerializer {
                     ops++;
                     
                     if ((ops & 0xFF) == 0) {
-                        if (player != null) {
+                        if (player != null && !player.isDisconnected()) {
                             long now = System.currentTimeMillis();
                             if (now - lastMessageTime > 500) {
                                 float percent = (float) currentIndex / totalBlocks * 100f;
@@ -526,7 +526,7 @@ public class AreaSerializer {
                 if (currentIndex >= totalBlocks) {
                     currentIndex = 0;
                     phase = 1;
-                    if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.restoring_blocks_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
+                    if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.restoring_blocks_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
                 }
             }
             
@@ -672,7 +672,7 @@ public class AreaSerializer {
                 
                 if (currentIndex >= entitiesToSpawn.size()) {
                     SvcntrlMod.LOGGER.info("[svcntrl] Restore task for project '{}' completed.", project.getName());
-                    if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.restore_completed").formatted(net.minecraft.util.Formatting.GOLD), true);
+                    if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.restore_completed").formatted(net.minecraft.util.Formatting.GOLD), true);
                     ProjectManager.getInstance().setProjectLocked(project, false);
                     return true;
                 }
@@ -684,7 +684,7 @@ public class AreaSerializer {
         @Override
         public void onCancel(Throwable t) {
             ProjectManager.getInstance().setProjectLocked(project, false);
-            if (player != null) {
+            if (player != null && !player.isDisconnected()) {
                 player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.restore_failed_cancelled").formatted(net.minecraft.util.Formatting.RED), false);
             }
         }

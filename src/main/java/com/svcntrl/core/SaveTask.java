@@ -170,7 +170,7 @@ public class SaveTask implements TaskScheduler.TickTask {
                     cx++;
 
                     if ((processed & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) {
-                        if (player != null) {
+                        if (player != null && !player.isDisconnected()) {
                             long now = System.currentTimeMillis();
                             if (now - lastMessageTime > 500) {
                                 float percent = (float) processed / (width * height * length) * 100f;
@@ -189,7 +189,7 @@ public class SaveTask implements TaskScheduler.TickTask {
         }
 
         finishedBlocks = true;
-        if (player != null) {
+        if (player != null && !player.isDisconnected()) {
             player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.saving_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
         }
         finishSave();
@@ -199,7 +199,7 @@ public class SaveTask implements TaskScheduler.TickTask {
     @Override
     public void onCancel(Throwable t) {
         ProjectManager.getInstance().setProjectLocked(project, false);
-        if (player != null) {
+        if (player != null && !player.isDisconnected()) {
             player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.save_failed_cancelled").formatted(net.minecraft.util.Formatting.RED), false);
         }
         if (onError != null) {

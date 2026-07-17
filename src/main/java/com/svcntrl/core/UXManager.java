@@ -105,7 +105,7 @@ public class UXManager {
     }
 
     public void tick(MinecraftServer server) {
-        tickCounter++;
+        tickCounter = (tickCounter + 1) % 1000000;
 
         // Action bar for previewing players (every 10 ticks = 0.5 sec)
         if (tickCounter % 10 == 0) {
@@ -142,7 +142,7 @@ public class UXManager {
                     String worldId = player.getWorld().getRegistryKey().getValue().toString();
                     for (Project project : ProjectManager.getInstance().getAllProjects()) {
                         if (!project.getWorldId().equals(worldId)) continue;
-                        if (!project.contains(player.getBlockPos()) && project.getMin().getSquaredDistance(player.getBlockPos()) > 16384 && project.getMax().getSquaredDistance(player.getBlockPos()) > 16384) continue;
+                        if (!project.contains(player.getBlockPos()) && player.getBlockPos().getSquaredDistance(new net.minecraft.util.math.BlockPos((project.getMin().getX() + project.getMax().getX()) / 2, (project.getMin().getY() + project.getMax().getY()) / 2, (project.getMin().getZ() + project.getMax().getZ()) / 2)) > 16384) continue;
                         int index = Math.abs(project.getName().hashCode()) % pool.length;
                         spawnOutlineParticles(player, project, pool[index]);
                     }

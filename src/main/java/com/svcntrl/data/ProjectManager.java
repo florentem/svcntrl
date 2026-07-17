@@ -311,16 +311,19 @@ public class ProjectManager {
         }
         obj.add("autoUpload", uploads);
         
-        lastPrefsFuture = com.svcntrl.SvcntrlMod.runAsync(() -> {
+        Runnable saveTask = () -> {
             try {
-                Files.createDirectories(dataDir);
-                try (Writer writer = Files.newBufferedWriter(prefsFile)) {
-                    new GsonBuilder().setPrettyPrinting().create().toJson(obj, writer);
-                }
-            } catch (Exception e) {
-                SvcntrlMod.LOGGER.error("[svcntrl] Failed to save player prefs", e);
+                java.nio.file.Files.writeString(prefsFile, new GsonBuilder().setPrettyPrinting().create().toJson(obj));
+            } catch (java.io.IOException e) {
+                com.svcntrl.SvcntrlMod.LOGGER.error("Failed to save player prefs", e);
             }
-        });
+        };
+
+        if (lastPrefsFuture == null || lastPrefsFuture.isDone()) {
+            lastPrefsFuture = com.svcntrl.SvcntrlMod.runAsync(saveTask);
+        } else {
+            lastPrefsFuture = lastPrefsFuture.thenRunAsync(saveTask, com.svcntrl.SvcntrlMod.getExecutor());
+        }
     }
 
     public void saveProjects() {
@@ -424,8 +427,8 @@ public class ProjectManager {
             JsonObject bObj = new JsonObject();
             bObj.addProperty("nextManualId", branch.getNextManualId());
             bObj.addProperty("nextAutoId", branch.getNextAutoId());
-            bObj.add("manualSnapshots", serializeSnapshotList(branch.getManualSnapshots()));
-            bObj.add("autoSnapshots", serializeSnapshotList(branch.getAutoSnapshots()));
+            synchronized(branch.getManualSnapshots()) { bObj.add("manualSnapshots", serializeSnapshotList(branch.getManualSnapshots())); }
+            synchronized(branch.getAutoSnapshots()) { bObj.add("autoSnapshots", serializeSnapshotList(branch.getAutoSnapshots())); }
             branchesObj.add(branch.getName(), bObj);
         }
         obj.add("branches", branchesObj);
