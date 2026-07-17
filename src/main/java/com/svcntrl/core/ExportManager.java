@@ -681,18 +681,35 @@ public class ExportManager {
             return;
         }
 
+        Boolean pref = com.svcntrl.data.ProjectManager.getInstance().getAutoUploadPref(player.getUuid());
+        if (Boolean.TRUE.equals(pref)) {
+            player.sendMessage(net.minecraft.text.Text.literal("Auto-uploading " + zipPath.getFileName().toString() + " to public endpoint...").formatted(net.minecraft.util.Formatting.YELLOW), false);
+            CompletableFuture.runAsync(() -> doActualUpload(zipPath, player));
+            return;
+        } else if (Boolean.FALSE.equals(pref)) {
+            return;
+        }
+
         long expiry = System.currentTimeMillis() + 60_000; // 60 seconds
         pendingUploads.put(player.getUuid(), new PendingUpload(zipPath, expiry));
 
         net.minecraft.text.MutableText uploadPrompt = net.minecraft.text.Text.translatable("svcntrl.msg.do_you_want_to_upload_this_fil")
                 .formatted(net.minecraft.util.Formatting.YELLOW)
-                .append(net.minecraft.text.Text.translatable("svcntrl.msg.yes_upload")
+                .append(" ")
+                .append(net.minecraft.text.Text.literal("[YES, ALWAYS]")
                         .formatted(net.minecraft.util.Formatting.GREEN, net.minecraft.util.Formatting.BOLD)
                         .styled(style -> style
-                                .withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl _upload"))
-                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.translatable("svcntrl.msg.click_to_upload_to_tmpfiles_or")))));
+                                .withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl _upload yes"))
+                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.literal("Upload this file and all future exports automatically")))))
+                .append(" ")
+                .append(net.minecraft.text.Text.literal("[NO, NEVER]")
+                        .formatted(net.minecraft.util.Formatting.RED, net.minecraft.util.Formatting.BOLD)
+                        .styled(style -> style
+                                .withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl _upload no"))
+                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.literal("Do not upload and never ask again")))));
 
         player.sendMessage(uploadPrompt, false);
+        player.sendMessage(net.minecraft.text.Text.literal("(You can change this later with /svcntrl autoupload <true/false/reset>)").formatted(net.minecraft.util.Formatting.GRAY), false);
     }
 
     public static void doActualUpload(Path zipPath, net.minecraft.server.network.ServerPlayerEntity player) {

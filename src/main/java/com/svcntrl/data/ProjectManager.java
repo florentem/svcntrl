@@ -22,6 +22,7 @@ public class ProjectManager {
     private final Map<UUID, String> activeProjects = new ConcurrentHashMap<>();
     private final Set<Project> lockedProjects = ConcurrentHashMap.newKeySet();
     private final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.CompletableFuture<Void>> saveTasks = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<UUID, Boolean> autoUploadPrefs = new ConcurrentHashMap<>();
 
     private ProjectManager() {
     }
@@ -64,6 +65,19 @@ public class ProjectManager {
             lockedProjects.remove(project);
             project.setLocked(false);
         }
+    }
+    
+    public Boolean getAutoUploadPref(UUID uuid) {
+        return autoUploadPrefs.get(uuid);
+    }
+    
+    public void setAutoUploadPref(UUID uuid, Boolean pref) {
+        if (pref == null) {
+            autoUploadPrefs.remove(uuid);
+        } else {
+            autoUploadPrefs.put(uuid, pref);
+        }
+        savePrefs();
     }
 
     public boolean isOverlappingLocked(Project project) {
@@ -252,6 +266,49 @@ public class ProjectManager {
         } catch (IOException e) {
             SvcntrlMod.LOGGER.error("[svcntrl] Failed to list data directory", e);
         }
+        
+        loadPrefs();
+    }
+
+    private void loadPrefs() {
+        Path prefsFile = dataDir.resolve("player_prefs.json");
+        if (Files.exists(prefsFile)) {
+            try (Reader reader = Files.newBufferedReader(prefsFile)) {
+                JsonObject obj = JsonParser.parseReader(reader).getAsJsonObject();
+                if (obj.has("autoUpload")) {
+                    JsonObject uploads = obj.getAsJsonObject("autoUpload");
+                    for (String key : uploads.keySet()) {
+                        try {
+                            autoUploadPrefs.put(UUID.fromString(key), uploads.get(key).getAsBoolean());
+                        } catch (Exception ignored) {}
+                    }
+                }
+            } catch (Exception e) {
+                SvcntrlMod.LOGGER.error("[svcntrl] Failed to load player prefs", e);
+            }
+        }
+    }
+    
+    private void savePrefs() {
+        if (dataDir == null) return;
+        Path prefsFile = dataDir.resolve("player_prefs.json");
+        JsonObject obj = new JsonObject();
+        JsonObject uploads = new JsonObject();
+        for (Map.Entry<UUID, Boolean> entry : autoUploadPrefs.entrySet()) {
+            uploads.addProperty(entry.getKey().toString(), entry.getValue());
+        }
+        obj.add("autoUpload", uploads);
+        
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                Files.createDirectories(dataDir);
+                try (Writer writer = Files.newBufferedWriter(prefsFile)) {
+                    new GsonBuilder().setPrettyPrinting().create().toJson(obj, writer);
+                }
+            } catch (Exception e) {
+                SvcntrlMod.LOGGER.error("[svcntrl] Failed to save player prefs", e);
+            }
+        });
     }
 
     public void saveProjects() {

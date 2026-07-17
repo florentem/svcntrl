@@ -38,7 +38,16 @@ public class SvcntrlCommands {
         dispatcher.register(literal("svcntrl")
                 // /svcntrl _upload (Hidden command for confirmation click)
                 .then(literal("_upload").requires(s -> s.getPlayer() != null && com.svcntrl.core.ExportManager.hasPendingUpload(s.getPlayer().getUuid()))
-                    .executes(ctx -> executeUpload(ctx.getSource()))
+                    .then(argument("choice", StringArgumentType.word())
+                        .executes(ctx -> executeUpload(ctx.getSource(), StringArgumentType.getString(ctx, "choice")))
+                    )
+                )
+
+                // /svcntrl autoupload <true|false|reset>
+                .then(literal("autoupload").requires(s -> s.getPlayer() != null)
+                    .then(argument("state", StringArgumentType.word())
+                        .executes(ctx -> executeAutoUpload(ctx.getSource(), StringArgumentType.getString(ctx, "state")))
+                    )
                 )
 
                 // /svcntrl project ...
@@ -1216,21 +1225,51 @@ public class SvcntrlCommands {
         return 1;
     }
 
-    private static int executeUpload(ServerCommandSource source) {
+    private static int executeUpload(ServerCommandSource source, String choice) {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         
         java.nio.file.Path file = com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid());
+        
+        if ("no".equalsIgnoreCase(choice)) {
+            com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), false);
+            source.sendFeedback(() -> Text.literal("Auto-upload disabled. This file and future exports will stay local.").formatted(Formatting.YELLOW), false);
+            return 1;
+        }
+
         if (file == null || !java.nio.file.Files.exists(file)) {
             source.sendError(Text.translatable("svcntrl.msg.no_valid_export_file_pending_f"));
             return 0;
         }
 
-        source.sendFeedback(() -> Text.literal("Uploading " + file.getFileName().toString() + " to tmpfiles.org...").formatted(Formatting.YELLOW), false);
+        if ("yes".equalsIgnoreCase(choice)) {
+            com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), true);
+        }
+
+        source.sendFeedback(() -> Text.literal("Uploading " + file.getFileName().toString() + " to public endpoint...").formatted(Formatting.YELLOW), false);
         CompletableFuture.runAsync(() -> {
             com.svcntrl.core.ExportManager.doActualUpload(file, player);
         });
         
+        return 1;
+    }
+
+    private static int executeAutoUpload(ServerCommandSource source, String state) {
+        ServerPlayerEntity player = source.getPlayer();
+        if (player == null) return 0;
+        if ("reset".equalsIgnoreCase(state)) {
+            com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), null);
+            source.sendFeedback(() -> Text.literal("Auto-upload preference reset. You will be prompted again.").formatted(Formatting.GREEN), false);
+        } else if ("true".equalsIgnoreCase(state) || "yes".equalsIgnoreCase(state)) {
+            com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), true);
+            source.sendFeedback(() -> Text.literal("Auto-upload enabled.").formatted(Formatting.GREEN), false);
+        } else if ("false".equalsIgnoreCase(state) || "no".equalsIgnoreCase(state)) {
+            com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), false);
+            source.sendFeedback(() -> Text.literal("Auto-upload disabled.").formatted(Formatting.GREEN), false);
+        } else {
+            source.sendError(Text.literal("Invalid state. Use true, false, or reset."));
+            return 0;
+        }
         return 1;
     }
 
