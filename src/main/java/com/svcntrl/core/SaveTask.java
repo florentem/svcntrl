@@ -122,9 +122,9 @@ public class SaveTask implements TaskScheduler.TickTask {
         int cachedChunkX = Integer.MIN_VALUE;
         int cachedChunkZ = Integer.MIN_VALUE;
 
-        while (cx <= max.getX()) {
+        while (cy <= max.getY()) {
             while (cz <= max.getZ()) {
-                while (cy <= max.getY()) {
+                while (cx <= max.getX()) {
                     mutable.set(cx, cy, cz);
                     
                     int currentChunkX = cx >> 4;
@@ -139,7 +139,6 @@ public class SaveTask implements TaskScheduler.TickTask {
                         cachedChunkX = currentChunkX;
                         cachedChunkZ = currentChunkZ;
                         
-                        // Budget check after potential force-load
                         if ((System.nanoTime() - startTime) > maxTimeNs) return false;
                     }
 
@@ -148,63 +147,53 @@ public class SaveTask implements TaskScheduler.TickTask {
                     int rx = cx - min.getX();
                     int ry = cy - min.getY();
                     int rz = cz - min.getZ();
-                    int index = rx + ry * width + rz * width * height;
                     
+                    int index = rz * (width * height) + ry * width + rx;
                     blockData[index] = getPaletteIndex(state);
 
                     BlockEntity blockEntity = cachedChunk.getBlockEntity(mutable);
                     if (blockEntity != null) {
-                        NbtCompound beNbt = blockEntity.createNbtWithIdentifyingData(world.getRegistryManager());
-                        beNbt.remove("x");
-                        beNbt.remove("y");
-                        beNbt.remove("z");
+                        NbtCompound blockEntityNbt = blockEntity.createNbtWithIdentifyingData(world.getRegistryManager());
+                        blockEntityNbt.remove("x");
+                        blockEntityNbt.remove("y");
+                        blockEntityNbt.remove("z");
                         
                         NbtCompound entry = new NbtCompound();
                         entry.putInt("X", rx);
                         entry.putInt("Y", ry);
                         entry.putInt("Z", rz);
-                        entry.put("Data", beNbt);
+                        entry.put("Data", blockEntityNbt);
                         blockEntitiesList.add(entry);
                     }
 
-                    cy++;
                     processed++;
+                    cx++;
 
-                    if ((processed & 0xFF) == 0) {
+                    if ((processed & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) {
                         if (player != null) {
                             long now = System.currentTimeMillis();
                             if (now - lastMessageTime > 500) {
                                 float percent = (float) processed / (width * height * length) * 100f;
-                                player.sendMessage(net.minecraft.text.Text.literal(String.format("Saving: %.1f%%", percent)).formatted(net.minecraft.util.Formatting.GREEN), true);
+                                player.sendMessage(net.minecraft.text.Text.literal(String.format("Saving Blocks: %.1f%%", percent)).formatted(net.minecraft.util.Formatting.GREEN), true);
                                 lastMessageTime = now;
                             }
                         }
-                        if ((System.nanoTime() - startTime) > maxTimeNs) {
-                            return false;
-                        }
+                        return false;
                     }
                 }
-                if (cy > max.getY()) {
-                    cy = min.getY();
-                    cz++;
-                }
+                cx = min.getX();
+                cz++;
             }
-            if (cz > max.getZ()) {
-                cz = min.getZ();
-                cx++;
-            }
+            cz = min.getZ();
+            cy++;
         }
 
-        if (cx > max.getX()) {
-            finishedBlocks = true;
-            if (player != null) {
-                player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.saving_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
-            }
-            finishSave();
-            return true;
+        finishedBlocks = true;
+        if (player != null) {
+            player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.saving_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
         }
-
-        return false;
+        finishSave();
+        return true;
     }
 
     @Override

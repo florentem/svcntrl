@@ -184,14 +184,52 @@ public class AreaSerializer {
                     patchMask[i] = !(tState.equals(bState) && beEqual);
                 }
 
+                NbtList tEntities = targetRoot.getListOrEmpty("Entities");
+                NbtList bEntities = baseRoot.getListOrEmpty("Entities");
+                NbtList entitiesToSpawn = new NbtList();
+                NbtList entitiesToRemove = new NbtList();
                 
-                NbtList patchEntities = targetRoot.getListOrEmpty("Entities");
-
+                // Very basic diff: compare NBT excluding UUID and Pos
+                for (int i = 0; i < tEntities.size(); i++) {
+                    NbtCompound te = tEntities.getCompoundOrEmpty(i).copy();
+                    te.remove("UUID");
+                    
+                    boolean found = false;
+                    for (int j = 0; j < bEntities.size(); j++) {
+                        NbtCompound be = bEntities.getCompoundOrEmpty(j).copy();
+                        be.remove("UUID");
+                        if (te.equals(be)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        entitiesToSpawn.add(tEntities.getCompoundOrEmpty(i));
+                    }
+                }
+                
+                for (int i = 0; i < bEntities.size(); i++) {
+                    NbtCompound be = bEntities.getCompoundOrEmpty(i).copy();
+                    be.remove("UUID");
+                    
+                    boolean found = false;
+                    for (int j = 0; j < tEntities.size(); j++) {
+                        NbtCompound te = tEntities.getCompoundOrEmpty(j).copy();
+                        te.remove("UUID");
+                        if (be.equals(te)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        entitiesToRemove.add(bEntities.getCompoundOrEmpty(i));
+                    }
+                }
 
                 world.getServer().execute(() -> {
                     try {
                         NbtList emptyEntities = new NbtList();
-                        TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, targetRoot, emptyEntities, project, patchMask, patchEntities).setExcludeIntersections(excludeIntersections));
+                        TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, targetRoot, emptyEntities, project, patchMask, entitiesToSpawn, entitiesToRemove).setExcludeIntersections(excludeIntersections));
                         SvcntrlMod.LOGGER.info("[svcntrl] Scheduled patch task for project '{}' (target {} vs base {})", project.getName(), targetId, baseId);
                     } catch (Throwable t) {
                         SvcntrlMod.LOGGER.error("[svcntrl] Failed to schedule patch task", t);
@@ -226,6 +264,7 @@ public class AreaSerializer {
         private final Project project;
         private final boolean[] patchMask;
         private final NbtList patchEntities;
+        private final NbtList entitiesToRemove;
         
         private java.util.List<Project> overlappingProjects = null;
         
@@ -236,10 +275,10 @@ public class AreaSerializer {
         private long lastMessageTime = 0;
 
         public RestoreTask(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, BlockPos min, NbtCompound root, NbtList entities, Project project) {
-            this(player, world, min, root, entities, project, null, null);
+            this(player, world, min, root, entities, project, null, null, null);
         }
 
-        public RestoreTask(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, BlockPos min, NbtCompound root, NbtList entities, Project project, boolean[] patchMask, NbtList patchEntities) {
+        public RestoreTask(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, BlockPos min, NbtCompound root, NbtList entities, Project project, boolean[] patchMask, NbtList patchEntities, NbtList entitiesToRemove) {
             this.player = player;
             this.world = world;
             this.min = min;
@@ -247,6 +286,7 @@ public class AreaSerializer {
             this.project = project;
             this.patchMask = patchMask;
             this.patchEntities = patchEntities;
+            this.entitiesToRemove = entitiesToRemove;
             
             this.phase = -1; // Always clear entities so removed entities are actually removed
             
@@ -328,6 +368,25 @@ public class AreaSerializer {
                             for (Project p : overlappingProjects) {
                                 if (p.contains(e.getBlockPos())) return false;
                             }
+                        }
+                        
+                        if (entitiesToRemove != null) {
+                            boolean match = false;
+                            for (int i = 0; i < entitiesToRemove.size(); i++) {
+                                NbtCompound removedNbt = entitiesToRemove.getCompoundOrEmpty(i);
+                                String id = removedNbt.getString("id", "");
+                                if (!id.equals(Registries.ENTITY_TYPE.getId(e.getType()).toString())) continue;
+                                
+                                double absX = min.getX() + removedNbt.getDouble("svcntrl_RelX", 0.0);
+                                double absY = min.getY() + removedNbt.getDouble("svcntrl_RelY", 0.0);
+                                double absZ = min.getZ() + removedNbt.getDouble("svcntrl_RelZ", 0.0);
+                                
+                                if (e.squaredDistanceTo(absX, absY, absZ) < 0.1) {
+                                    match = true;
+                                    break;
+                                }
+                            }
+                            return match;
                         }
                         return true;
                     });

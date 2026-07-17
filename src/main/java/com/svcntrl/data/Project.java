@@ -17,7 +17,7 @@ public class Project {
     private final Set<UUID> members = new HashSet<>();
 
     private String currentBranch = "main";
-    private final Map<String, Branch> branches = new HashMap<>();
+    private final Map<String, Branch> branches = new java.util.concurrent.ConcurrentHashMap<>();
 
     private transient volatile boolean locked = false;
 
@@ -99,17 +99,19 @@ public class Project {
         while (branch.autoSnapshots.size() > 10) {
             // Find the oldest snapshot that is NOT in the excluded list
             SnapshotMeta toRemove = null;
-            for (SnapshotMeta meta : branch.autoSnapshots) {
-                boolean excluded = false;
-                for (int ex : excludeIds) {
-                    if (meta.getId() == ex) {
-                        excluded = true;
+            synchronized (branch.autoSnapshots) {
+                for (SnapshotMeta meta : branch.autoSnapshots) {
+                    boolean excluded = false;
+                    for (int ex : excludeIds) {
+                        if (meta.getId() == ex) {
+                            excluded = true;
+                            break;
+                        }
+                    }
+                    if (!excluded) {
+                        toRemove = meta;
                         break;
                     }
-                }
-                if (!excluded) {
-                    toRemove = meta;
-                    break;
                 }
             }
             if (toRemove == null) break;
@@ -212,8 +214,8 @@ public class Project {
         private String name;
         private int nextManualId = 1;
         private int nextAutoId = 1;
-        private final List<SnapshotMeta> manualSnapshots = new ArrayList<>();
-        private final List<SnapshotMeta> autoSnapshots = new LinkedList<>();
+        private final List<SnapshotMeta> manualSnapshots = java.util.Collections.synchronizedList(new ArrayList<>());
+        private final List<SnapshotMeta> autoSnapshots = java.util.Collections.synchronizedList(new LinkedList<>());
 
         public Branch(String name) {
             this.name = name;
