@@ -289,6 +289,8 @@ public class ProjectManager {
         }
     }
     
+    private java.util.concurrent.CompletableFuture<Void> lastPrefsFuture = null;
+
     private void savePrefs() {
         if (dataDir == null) return;
         Path prefsFile = dataDir.resolve("player_prefs.json");
@@ -299,7 +301,7 @@ public class ProjectManager {
         }
         obj.add("autoUpload", uploads);
         
-        java.util.concurrent.CompletableFuture.runAsync(() -> {
+        lastPrefsFuture = java.util.concurrent.CompletableFuture.runAsync(() -> {
             try {
                 Files.createDirectories(dataDir);
                 try (Writer writer = Files.newBufferedWriter(prefsFile)) {
@@ -315,6 +317,9 @@ public class ProjectManager {
         List<java.util.concurrent.CompletableFuture<Void>> futures = new ArrayList<>();
         for (Project project : projects.values()) {
             futures.add(saveProjectFuture(project));
+        }
+        if (lastPrefsFuture != null) {
+            futures.add(lastPrefsFuture);
         }
         java.util.concurrent.CompletableFuture.allOf(futures.toArray(new java.util.concurrent.CompletableFuture[0])).join();
     }

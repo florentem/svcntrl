@@ -122,6 +122,17 @@ public class AreaSerializer {
                     return;
                 }
 
+                if (targetRoot.getInt("MinX", 0) != baseRoot.getInt("MinX", 0) ||
+                    targetRoot.getInt("MaxX", 0) != baseRoot.getInt("MaxX", 0) ||
+                    targetRoot.getInt("MinY", 0) != baseRoot.getInt("MinY", 0) ||
+                    targetRoot.getInt("MaxY", 0) != baseRoot.getInt("MaxY", 0) ||
+                    targetRoot.getInt("MinZ", 0) != baseRoot.getInt("MinZ", 0) ||
+                    targetRoot.getInt("MaxZ", 0) != baseRoot.getInt("MaxZ", 0)) {
+                    ProjectManager.getInstance().setProjectLocked(project, false);
+                    if (player != null) player.sendMessage(net.minecraft.text.Text.literal("Cannot patch restore: Target and Base snapshots have different dimensions!").formatted(net.minecraft.util.Formatting.RED), false);
+                    return;
+                }
+
                 int[] tData = targetRoot.getIntArray("BlockData").orElse(new int[0]);
                 NbtList tPalList = targetRoot.getListOrEmpty("Palette");
                 BlockState[] tPalette = new BlockState[tPalList.size()];

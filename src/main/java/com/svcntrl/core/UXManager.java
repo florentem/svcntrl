@@ -176,32 +176,39 @@ public class UXManager {
         double stepY = Math.max(2.0, lengthY / maxParticlesPerEdge);
         double stepZ = Math.max(2.0, lengthZ / maxParticlesPerEdge);
 
-        // Bottom and Top rects
-        for (double x = minX; x <= maxX; x += stepX) {
-            sendParticle(player, x, minY, minZ, particleStr);
-            sendParticle(player, x, minY, maxZ, particleStr);
-            sendParticle(player, x, maxY, minZ, particleStr);
-            sendParticle(player, x, maxY, maxZ, particleStr);
-        }
-        for (double z = minZ; z <= maxZ; z += stepZ) {
-            sendParticle(player, minX, minY, z, particleStr);
-            sendParticle(player, maxX, minY, z, particleStr);
-            sendParticle(player, minX, maxY, z, particleStr);
-            sendParticle(player, maxX, maxY, z, particleStr);
-        }
-        // Vertical lines
-        for (double y = minY; y <= maxY; y += stepY) {
-            sendParticle(player, minX, y, minZ, particleStr);
-            sendParticle(player, maxX, y, minZ, particleStr);
-            sendParticle(player, minX, y, maxZ, particleStr);
-            sendParticle(player, maxX, y, maxZ, particleStr);
-        }
-    }
-
-    private void sendParticle(ServerPlayerEntity player, double x, double y, double z, String particleStr) {
         ParticleType<?> type = Registries.PARTICLE_TYPE.get(Identifier.of(particleStr));
         if (type == null) type = ParticleTypes.FLAME;
         
-        ((net.minecraft.server.world.ServerWorld)player.getWorld()).spawnParticles(player, (net.minecraft.particle.ParticleEffect) type, true, true, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
+        net.minecraft.particle.ParticleEffect effect;
+        if (type instanceof net.minecraft.particle.ParticleEffect) {
+            effect = (net.minecraft.particle.ParticleEffect) type;
+        } else {
+            effect = (net.minecraft.particle.ParticleEffect) ParticleTypes.FLAME;
+        }
+
+        // Bottom and Top rects
+        for (double x = minX; x <= maxX; x += stepX) {
+            sendParticle(player, x, minY, minZ, effect);
+            sendParticle(player, x, minY, maxZ, effect);
+            sendParticle(player, x, maxY, minZ, effect);
+            sendParticle(player, x, maxY, maxZ, effect);
+        }
+        for (double z = minZ; z <= maxZ; z += stepZ) {
+            sendParticle(player, minX, minY, z, effect);
+            sendParticle(player, maxX, minY, z, effect);
+            sendParticle(player, minX, maxY, z, effect);
+            sendParticle(player, maxX, maxY, z, effect);
+        }
+        // Vertical lines
+        for (double y = minY; y <= maxY; y += stepY) {
+            sendParticle(player, minX, y, minZ, effect);
+            sendParticle(player, maxX, y, minZ, effect);
+            sendParticle(player, minX, y, maxZ, effect);
+            sendParticle(player, maxX, y, maxZ, effect);
+        }
+    }
+
+    private void sendParticle(ServerPlayerEntity player, double x, double y, double z, net.minecraft.particle.ParticleEffect effect) {
+        ((net.minecraft.server.world.ServerWorld)player.getWorld()).spawnParticles(player, effect, true, true, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
     }
 }

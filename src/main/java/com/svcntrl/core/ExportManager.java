@@ -206,7 +206,7 @@ public class ExportManager {
                                     if (path.toString().endsWith(".nbt")) {
                                         NbtCompound snapRoot = net.minecraft.nbt.NbtIo.readCompressed(path, net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes());
                                         String[] parts = path.getFileName().toString().replace(".nbt", "").split("_");
-                                        String cat = "snapshot";
+                                        String cat = parts.length > 0 ? parts[0] : "snapshot";
                                         int sid = 0;
                                         if (parts.length > 1) {
                                             try {
@@ -498,6 +498,16 @@ public class ExportManager {
         
         if (!isV2Target || !isV2Base) {
             if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.diff_export_currently_only_sup").formatted(net.minecraft.util.Formatting.RED), false);
+            return null;
+        }
+
+        if (targetRoot.getInt("MinX", 0) != baseRoot.getInt("MinX", 0) ||
+            targetRoot.getInt("MaxX", 0) != baseRoot.getInt("MaxX", 0) ||
+            targetRoot.getInt("MinY", 0) != baseRoot.getInt("MinY", 0) ||
+            targetRoot.getInt("MaxY", 0) != baseRoot.getInt("MaxY", 0) ||
+            targetRoot.getInt("MinZ", 0) != baseRoot.getInt("MinZ", 0) ||
+            targetRoot.getInt("MaxZ", 0) != baseRoot.getInt("MaxZ", 0)) {
+            if (player != null) player.sendMessage(net.minecraft.text.Text.literal("Cannot diff export: Target and Base snapshots have different dimensions!").formatted(net.minecraft.util.Formatting.RED), false);
             return null;
         }
 

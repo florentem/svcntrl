@@ -26,8 +26,15 @@ public class TaskScheduler {
     }
 
     public void clear() {
+        Throwable reason = new RuntimeException("Task scheduler cleared (Server Stopping)");
+        for (TickTask task : tasks) {
+            try { task.onCancel(reason); } catch (Throwable t) {}
+        }
+        TickTask pendingTask;
+        while ((pendingTask = pendingAdd.poll()) != null) {
+            try { pendingTask.onCancel(reason); } catch (Throwable t) {}
+        }
         tasks.clear();
-        pendingAdd.clear();
         nextTaskIndex = 0;
     }
 
@@ -71,7 +78,9 @@ public class TaskScheduler {
             }
             
             if (done) {
-                tasks.remove(nextTaskIndex);
+                int lastIdx = tasks.size() - 1;
+                tasks.set(nextTaskIndex, tasks.get(lastIdx));
+                tasks.remove(lastIdx);
             } else {
                 nextTaskIndex++;
             }

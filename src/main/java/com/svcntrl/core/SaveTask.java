@@ -236,8 +236,10 @@ public class SaveTask implements TaskScheduler.TickTask {
 
         List<Entity> entities = world.getOtherEntities(null, areaBounds, entity -> !(entity instanceof PlayerEntity));
         for (Entity entity : entities) {
+            if (entity.hasVehicle()) continue; // Let the vehicle save its passengers
+            
             NbtWriteView writeView = NbtWriteView.create(ErrorReporter.EMPTY);
-            if (entity.saveSelfData(writeView)) {
+            if (entity.saveData(writeView)) {
                 NbtCompound entityNbt = writeView.getNbt();
                 
                 if (!entityNbt.contains("id")) {

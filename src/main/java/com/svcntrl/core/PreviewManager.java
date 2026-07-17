@@ -32,7 +32,7 @@ public class PreviewManager {
 
     // Map of Player UUID -> Map of ChunkPos -> Map of BlockPos to Preview BlockState
     private final Map<UUID, Map<net.minecraft.util.math.ChunkPos, Map<BlockPos, BlockState>>> activePreviews = new ConcurrentHashMap<>();
-    private final Map<UUID, List<Integer>> activePreviewEntities = new ConcurrentHashMap<>();
+    private final Map<UUID, java.util.Set<Integer>> activePreviewEntities = new ConcurrentHashMap<>();
     private final Map<UUID, String> previewingProjects = new ConcurrentHashMap<>();
     private final Map<UUID, net.minecraft.util.math.Box> previewBoundingBoxes = new ConcurrentHashMap<>();
     private final java.util.Set<UUID> pendingPreviews = ConcurrentHashMap.newKeySet();
@@ -84,7 +84,7 @@ public class PreviewManager {
         if (!hasPreview(player.getUuid())) return false;
         if (entity instanceof net.minecraft.server.network.ServerPlayerEntity) return false;
         
-        List<Integer> fakeEntities = activePreviewEntities.get(player.getUuid());
+        java.util.Set<Integer> fakeEntities = activePreviewEntities.get(player.getUuid());
         if (fakeEntities != null && fakeEntities.contains(entity.getId())) return false;
         
         net.minecraft.util.math.Box box = previewBoundingBoxes.get(player.getUuid());
@@ -144,7 +144,7 @@ public class PreviewManager {
                 }
 
                 activePreviews.put(player.getUuid(), new HashMap<>());
-                activePreviewEntities.put(player.getUuid(), new ArrayList<>());
+                activePreviewEntities.put(player.getUuid(), new java.util.HashSet<>());
                 previewingProjects.put(player.getUuid(), project.getName());
                 
                 net.minecraft.util.math.Box bounds = new net.minecraft.util.math.Box(
@@ -191,7 +191,7 @@ public class PreviewManager {
             TaskScheduler.getInstance().schedule(new StopPreviewTask(player, allBlocks, showProgress));
         }
 
-        List<Integer> entities = activePreviewEntities.remove(uuid);
+        java.util.Set<Integer> entities = activePreviewEntities.remove(uuid);
         if (entities != null && !entities.isEmpty()) {
             int[] entityIds = entities.stream().mapToInt(i -> i).toArray();
             player.networkHandler.sendPacket(new EntitiesDestroyS2CPacket(entityIds));
@@ -360,7 +360,7 @@ public class PreviewManager {
             }
 
             if (phase == 1) {
-                List<Integer> spawnedEntityIds = PreviewManager.getInstance().activePreviewEntities.get(player.getUuid());
+                java.util.Set<Integer> spawnedEntityIds = PreviewManager.getInstance().activePreviewEntities.get(player.getUuid());
                 if (spawnedEntityIds == null) return true;
 
                 while (currentIndex < entities.size()) {

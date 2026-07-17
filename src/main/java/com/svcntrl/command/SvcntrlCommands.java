@@ -666,7 +666,7 @@ public class SvcntrlCommands {
         if (project == null) { source.sendError(Text.literal("Project '" + name + "' not found.")); return 0; }
         if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         ProjectManager.getInstance().setActiveProject(player.getUuid(), name);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.active_project_set_to").formatted(Formatting.GREEN).append(Text.literal(name).formatted(Formatting.GOLD)).append(Text.translatable("svcntrl.msg.").formatted(Formatting.GREEN)), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.active_project_set_to").formatted(Formatting.GREEN).append(Text.literal(name).formatted(Formatting.GOLD)), false);
         return 1;
     }
 
@@ -718,7 +718,7 @@ public class SvcntrlCommands {
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
         if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.branches_for_project").append(Text.literal(project.getName()).formatted(Formatting.AQUA)).append(Text.translatable("svcntrl.msg.")), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.branches_for_project").append(Text.literal(project.getName()).formatted(Formatting.AQUA)), false);
         for (Project.Branch b : project.getBranches()) {
             boolean isCurrent = b.getName().equals(project.getCurrentBranchName());
             source.sendFeedback(() -> Text.literal((isCurrent ? " * " : "   ") + b.getName())
@@ -746,7 +746,7 @@ public class SvcntrlCommands {
 
         int snapshotId = project.addManualSnapshot(branchName, description, player.getUuid(), player.getName().getString());
         
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.saving_project").append(Text.literal(project.getName()).formatted(Formatting.AQUA)).append(Text.translatable("svcntrl.msg.")), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.saving_project").append(Text.literal(project.getName()).formatted(Formatting.AQUA)), false);
         
         AreaSerializer.saveAreaAsync(player, world, project, branchName, "manual", snapshotId, () -> {
             ProjectManager.getInstance().saveProject(project);
@@ -887,6 +887,7 @@ public class SvcntrlCommands {
                 source.sendError(Text.literal("Failed to save branch state: " + err));
             });
         } else {
+            source.sendFeedback(() -> Text.literal("Warning: Checkout executed without saving. Current unsaved changes are lost!").formatted(Formatting.RED, Formatting.BOLD), false);
             onCheckout.run();
         }
         
