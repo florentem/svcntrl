@@ -12,7 +12,7 @@ svcntrl uses a straightforward snapshot system designed specifically to handle l
 Everything starts with a **Project** (a cubic region in the world). You can freely create overlapping or nested projects to organize your builds (e.g., placing a redstone machine "sub-project" inside a larger city "project").
 - `/svcntrl project create <name>` - Create a new project.
 - `/svcntrl select <name>` - Set your active project.
-- `/svcntrl raycast` - Look at a project and right-click to select it visually.
+- `/svcntrl select raycast` - Look at a project and right-click to select it visually.
 - `/svcntrl outline` - Toggle particle borders for your active project.
 
 *(Other project commands: `/svcntrl project list`, `delete`)*
@@ -20,7 +20,7 @@ Everything starts with a **Project** (a cubic region in the world). You can free
 ### Snapshots & Previews
 Save your progress and roll back when necessary. The mod auto-saves a backup before any rollback to prevent accidental data loss.
 - `/svcntrl save <snapshot_description>` - Save the current state of your project.
-- `/svcntrl logs` - View the history of your saves.
+- `/svcntrl log ["filter"] [page]` - View the history of your saves with smart text filtering.
 - `/svcntrl preview start <id>` - Visually preview a past snapshot (renders phantom blocks over the world).
 - `/svcntrl preview stop` - Exit preview mode.
 - `/svcntrl restore <id> [--nosave] [--exclude-intersections]` - Revert your project to a past snapshot.
