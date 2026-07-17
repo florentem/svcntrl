@@ -15,7 +15,7 @@ Everything starts with a **Project** (a cubic region in the world). You can free
 - `/svcntrl select raycast` - Look at a project and right-click to select it visually.
 - `/svcntrl outline` - Toggle particle borders for your active project.
 
-*(Other project commands: `/svcntrl project list`, `delete`)*
+*(Other project commands: `/svcntrl project list`, `remove`)*
 
 ### Snapshots & Previews
 Save your progress and roll back when necessary. The mod auto-saves a backup before any rollback to prevent accidental data loss.
