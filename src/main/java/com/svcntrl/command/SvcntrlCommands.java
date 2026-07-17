@@ -1195,7 +1195,7 @@ public class SvcntrlCommands {
         if (project.isLocked()) { source.sendError(Text.literal("Project (or an overlapping project) is locked by another operation.")); return 0; }
         if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.literal("You don't have access.")); return 0; }
 
-        ExportManager.exportDiff(project, targetBranch, "manual", targetId, baseBranch, "manual", baseId, player);
+        ExportManager.exportDiff(project, targetBranch, category, targetId, baseBranch, category, baseId, player);
         return 1;
     }
 

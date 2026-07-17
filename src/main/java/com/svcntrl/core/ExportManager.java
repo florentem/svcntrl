@@ -152,22 +152,26 @@ public class ExportManager {
 
                 NbtIo.writeCompressed(litematic, filePath);
 
-                player.sendMessage(Text.literal("Uploading schematic to public host (tmpfiles.org), please wait...").formatted(Formatting.YELLOW), false);
+                if (com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport && player.getServer().isDedicated()) {
+                    player.sendMessage(Text.literal("Uploading schematic to public host (tmpfiles.org), please wait...").formatted(Formatting.YELLOW), false);
 
-                java.util.concurrent.CompletableFuture.runAsync(() -> {
-                    try {
-                        Path zipPath = exportDir.resolve(fileName + ".zip");
-                        try (java.util.zip.ZipOutputStream zout = new java.util.zip.ZipOutputStream(Files.newOutputStream(zipPath))) {
-                            zout.putNextEntry(new java.util.zip.ZipEntry(fileName));
-                            Files.copy(filePath, zout);
-                            zout.closeEntry();
+                    java.util.concurrent.CompletableFuture.runAsync(() -> {
+                        try {
+                            Path zipPath = exportDir.resolve(fileName + ".zip");
+                            try (java.util.zip.ZipOutputStream zout = new java.util.zip.ZipOutputStream(Files.newOutputStream(zipPath))) {
+                                zout.putNextEntry(new java.util.zip.ZipEntry(fileName));
+                                Files.copy(filePath, zout);
+                                zout.closeEntry();
+                            }
+                            uploadToTmpfiles(zipPath, player);
+                        } catch (Throwable e) {
+                            SvcntrlMod.LOGGER.error("Export zip failed", e);
+                            if (player != null) player.sendMessage(Text.literal("Failed to create zip. Check logs.").formatted(Formatting.RED), false);
                         }
-                        uploadToTmpfiles(zipPath, player);
-                    } catch (Throwable e) {
-                        SvcntrlMod.LOGGER.error("Export zip failed", e);
-                        if (player != null) player.sendMessage(Text.literal("Failed to create zip. Check logs.").formatted(Formatting.RED), false);
-                    }
-                });
+                    });
+                } else {
+                    player.sendMessage(Text.literal("Export saved: " + fileName).formatted(Formatting.GREEN), false);
+                }
 
             } catch (Throwable e) {
                 SvcntrlMod.LOGGER.error("Failed to export", e);
@@ -459,23 +463,27 @@ public class ExportManager {
 
                 net.minecraft.nbt.NbtIo.writeCompressed(litematic, filePath);
 
-                player.sendMessage(net.minecraft.text.Text.literal("Uploading diff schematic, please wait...")
-                        .formatted(net.minecraft.util.Formatting.YELLOW), false);
+                if (com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport && player.getServer().isDedicated()) {
+                    player.sendMessage(net.minecraft.text.Text.literal("Uploading diff schematic, please wait...")
+                            .formatted(net.minecraft.util.Formatting.YELLOW), false);
 
-                java.util.concurrent.CompletableFuture.runAsync(() -> {
-                    try {
-                        Path zipPath = exportDir.resolve(fileName + ".zip");
-                        try (java.util.zip.ZipOutputStream zout = new java.util.zip.ZipOutputStream(Files.newOutputStream(zipPath))) {
-                            zout.putNextEntry(new java.util.zip.ZipEntry(fileName));
-                            Files.copy(filePath, zout);
-                            zout.closeEntry();
+                    java.util.concurrent.CompletableFuture.runAsync(() -> {
+                        try {
+                            Path zipPath = exportDir.resolve(fileName + ".zip");
+                            try (java.util.zip.ZipOutputStream zout = new java.util.zip.ZipOutputStream(Files.newOutputStream(zipPath))) {
+                                zout.putNextEntry(new java.util.zip.ZipEntry(fileName));
+                                Files.copy(filePath, zout);
+                                zout.closeEntry();
+                            }
+                            uploadToTmpfiles(zipPath, player);
+                        } catch (Throwable e) {
+                            SvcntrlMod.LOGGER.error("Diff zip failed", e);
+                            if (player != null) player.sendMessage(net.minecraft.text.Text.literal("Failed to create zip. Check logs.").formatted(net.minecraft.util.Formatting.RED), false);
                         }
-                        uploadToTmpfiles(zipPath, player);
-                    } catch (Throwable e) {
-                        SvcntrlMod.LOGGER.error("Diff zip failed", e);
-                        if (player != null) player.sendMessage(net.minecraft.text.Text.literal("Failed to create zip. Check logs.").formatted(net.minecraft.util.Formatting.RED), false);
-                    }
-                });
+                    });
+                } else {
+                    player.sendMessage(net.minecraft.text.Text.literal("Diff export saved: " + fileName).formatted(net.minecraft.util.Formatting.GREEN), false);
+                }
 
             } catch (Throwable e) {
                 SvcntrlMod.LOGGER.error("Failed to export diff", e);

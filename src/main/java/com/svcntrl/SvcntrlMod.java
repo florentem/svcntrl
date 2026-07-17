@@ -2,7 +2,6 @@ package com.svcntrl;
 
 import com.svcntrl.command.SvcntrlCommands;
 import com.svcntrl.data.ProjectManager;
-import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;

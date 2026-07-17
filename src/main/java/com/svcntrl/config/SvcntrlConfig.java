@@ -43,7 +43,7 @@ public class SvcntrlConfig {
                     // Validate and apply defaults for null fields
                     if (loaded.outlineParticle == null) loaded.outlineParticle = "minecraft:flame";
                     if (loaded.outlineFrequencyTicks <= 0) loaded.outlineFrequencyTicks = 15;
-                    if (loaded.maxRegionVolume <= 0) loaded.maxRegionVolume = 100000000;
+                    if (loaded.maxRegionVolume <= 0) loaded.maxRegionVolume = 5_000_000;
                     if (loaded.raycastParticlePool == null || loaded.raycastParticlePool.length == 0) {
                         loaded.raycastParticlePool = new SvcntrlConfig().raycastParticlePool;
                     }
