@@ -70,9 +70,9 @@ public class AreaSerializer {
         }
 
         ProjectManager.getInstance().setProjectLocked(project, true);
-        java.util.concurrent.CompletableFuture.runAsync(() -> {
+        com.svcntrl.SvcntrlMod.runAsync(() -> {
             try {
-                NbtCompound root = NbtIo.readCompressed(filePath, NbtSizeTracker.ofUnlimitedBytes());
+                NbtCompound root = NbtIo.readCompressed(filePath, NbtSizeTracker.of(512L * 1024L * 1024L));
                 world.getServer().execute(() -> {
                     try {
                         BlockPos min = project.getMin();
@@ -109,10 +109,10 @@ public class AreaSerializer {
 
         ProjectManager.getInstance().setProjectLocked(project, true);
         BlockPos min = project.getMin();
-        java.util.concurrent.CompletableFuture.runAsync(() -> {
+        com.svcntrl.SvcntrlMod.runAsync(() -> {
             try {
-                NbtCompound targetRoot = net.minecraft.nbt.NbtIo.readCompressed(targetPath, net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes());
-                NbtCompound baseRoot = net.minecraft.nbt.NbtIo.readCompressed(basePath, net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes());
+                NbtCompound targetRoot = net.minecraft.nbt.NbtIo.readCompressed(targetPath, net.minecraft.nbt.NbtSizeTracker.of(512L * 1024L * 1024L));
+                NbtCompound baseRoot = net.minecraft.nbt.NbtIo.readCompressed(basePath, net.minecraft.nbt.NbtSizeTracker.of(512L * 1024L * 1024L));
 
                 boolean isV2Target = targetRoot.contains("Version") && targetRoot.getInt("Version", 1) == 2;
                 boolean isV2Base = baseRoot.contains("Version") && baseRoot.getInt("Version", 1) == 2;
@@ -705,7 +705,7 @@ public class AreaSerializer {
             return null;
         }
         try {
-            return NbtIo.readCompressed(filePath, NbtSizeTracker.ofUnlimitedBytes());
+            return NbtIo.readCompressed(filePath, NbtSizeTracker.of(512L * 1024L * 1024L));
         } catch (IOException e) {
             SvcntrlMod.LOGGER.error("[svcntrl] Failed to read snapshot: {}", filePath, e);
             return null;

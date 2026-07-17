@@ -133,7 +133,7 @@ public class PreviewManager {
         pendingPreviews.add(player.getUuid());
         player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.loading_snapshot_for_preview").formatted(net.minecraft.util.Formatting.YELLOW));
         
-        java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+        com.svcntrl.SvcntrlMod.supplyAsync(() -> {
             return AreaSerializer.readSnapshot(project, branchName, category, snapshotId);
         }).thenAccept(root -> {
             player.getServer().execute(() -> {
@@ -143,8 +143,8 @@ public class PreviewManager {
                     return;
                 }
 
-                activePreviews.put(player.getUuid(), new HashMap<>());
-                activePreviewEntities.put(player.getUuid(), new java.util.HashSet<>());
+                activePreviews.put(player.getUuid(), new ConcurrentHashMap<>());
+                activePreviewEntities.put(player.getUuid(), ConcurrentHashMap.newKeySet());
                 previewingProjects.put(player.getUuid(), project.getName());
                 
                 net.minecraft.util.math.Box bounds = new net.minecraft.util.math.Box(

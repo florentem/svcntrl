@@ -32,7 +32,7 @@ public class PendingCreateManager {
         pending.entrySet().removeIf(entry -> {
             if (now > entry.getValue().expiryTime) {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());
-                if (player != null) {
+                if (player != null && !player.isDisconnected()) {
                     player.sendMessage(Text.literal("Project creation for '" + entry.getValue().projectName + "' timed out.").formatted(Formatting.RED), false);
                 }
                 return true;

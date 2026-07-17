@@ -944,7 +944,7 @@ public class SvcntrlCommands {
             branch.removeAutoSnapshot(id);
         }
         
-        java.util.concurrent.CompletableFuture.runAsync(() -> {
+        com.svcntrl.SvcntrlMod.runAsync(() -> {
             try {
                 java.nio.file.Files.deleteIfExists(snapshotPath);
                 ProjectManager.getInstance().saveProject(project);
@@ -1251,7 +1251,7 @@ public class SvcntrlCommands {
         }
 
         source.sendFeedback(() -> Text.literal("Uploading " + file.getFileName().toString() + " to public endpoint...").formatted(Formatting.YELLOW), false);
-        CompletableFuture.runAsync(() -> {
+        com.svcntrl.SvcntrlMod.runAsync(() -> {
             com.svcntrl.core.ExportManager.doActualUpload(file, player);
         });
         

@@ -135,7 +135,7 @@ public class ExportManager {
     }
 
     public static void exportSnapshot(Project project, String branchName, String category, int id, ServerPlayerEntity player) {
-        CompletableFuture.runAsync(() -> {
+        com.svcntrl.SvcntrlMod.runAsync(() -> {
             try {
                 NbtCompound root = AreaSerializer.readSnapshot(project, branchName, category, id);
                 if (root == null) {
@@ -155,7 +155,7 @@ public class ExportManager {
                 if (com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport && player.getServer().isDedicated()) {
                     player.sendMessage(Text.translatable("svcntrl.msg.uploading_schematic_to_public").formatted(Formatting.YELLOW), false);
 
-                    java.util.concurrent.CompletableFuture.runAsync(() -> {
+                    com.svcntrl.SvcntrlMod.runAsync(() -> {
                         try {
                             Path zipPath = exportDir.resolve(fileName + ".zip");
                             try (java.util.zip.ZipOutputStream zout = new java.util.zip.ZipOutputStream(Files.newOutputStream(zipPath))) {
@@ -181,7 +181,7 @@ public class ExportManager {
     }
 
     public static void exportProjectFull(Project project, ServerPlayerEntity player) {
-        CompletableFuture.runAsync(() -> {
+        com.svcntrl.SvcntrlMod.runAsync(() -> {
             try {
                 Path projectDir = ProjectManager.getInstance().getProjectDir(project);
                 if (!Files.exists(projectDir)) {
@@ -204,7 +204,7 @@ public class ExportManager {
                                 try {
                                     String relPath = projectDir.relativize(path).toString().replace("\\", "/");
                                     if (path.toString().endsWith(".nbt")) {
-                                        NbtCompound snapRoot = net.minecraft.nbt.NbtIo.readCompressed(path, net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes());
+                                        NbtCompound snapRoot = net.minecraft.nbt.NbtIo.readCompressed(path, net.minecraft.nbt.NbtSizeTracker.of(512L * 1024L * 1024L));
                                         String[] parts = path.getFileName().toString().replace(".nbt", "").split("_");
                                         String cat = parts.length > 0 ? parts[0] : "snapshot";
                                         int sid = 0;
@@ -231,7 +231,7 @@ public class ExportManager {
                             });
                 }
 
-                java.util.concurrent.CompletableFuture.runAsync(() -> {
+                com.svcntrl.SvcntrlMod.runAsync(() -> {
                     uploadToTmpfiles(zipPath, player);
                 });
 
@@ -436,7 +436,7 @@ public class ExportManager {
     }
 
     public static void exportDiff(Project project, String targetBranch, String targetCategory, int targetId, String baseBranch, String baseCategory, int baseId, ServerPlayerEntity player) {
-        java.util.concurrent.CompletableFuture.runAsync(() -> {
+        com.svcntrl.SvcntrlMod.runAsync(() -> {
             try {
                 Path targetPath = ProjectManager.getInstance().getSnapshotPath(project, targetBranch, targetCategory, targetId);
                 Path basePath = ProjectManager.getInstance().getSnapshotPath(project, baseBranch, baseCategory, baseId);
@@ -449,8 +449,8 @@ public class ExportManager {
                 if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.calculating_diff_and_generatin")
                         .formatted(net.minecraft.util.Formatting.YELLOW), false);
 
-                NbtCompound targetRoot = net.minecraft.nbt.NbtIo.readCompressed(targetPath, net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes());
-                NbtCompound baseRoot = net.minecraft.nbt.NbtIo.readCompressed(basePath, net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes());
+                NbtCompound targetRoot = net.minecraft.nbt.NbtIo.readCompressed(targetPath, net.minecraft.nbt.NbtSizeTracker.of(512L * 1024L * 1024L));
+                NbtCompound baseRoot = net.minecraft.nbt.NbtIo.readCompressed(basePath, net.minecraft.nbt.NbtSizeTracker.of(512L * 1024L * 1024L));
 
                 NbtCompound litematic = convertToLitematicDiff(targetRoot, baseRoot, project, targetCategory, targetId, baseId, player);
                 
@@ -467,7 +467,7 @@ public class ExportManager {
                     player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.uploading_diff_schematic_pleas")
                             .formatted(net.minecraft.util.Formatting.YELLOW), false);
 
-                    java.util.concurrent.CompletableFuture.runAsync(() -> {
+                    com.svcntrl.SvcntrlMod.runAsync(() -> {
                         try {
                             Path zipPath = exportDir.resolve(fileName + ".zip");
                             try (java.util.zip.ZipOutputStream zout = new java.util.zip.ZipOutputStream(Files.newOutputStream(zipPath))) {
@@ -694,7 +694,7 @@ public class ExportManager {
         Boolean pref = com.svcntrl.data.ProjectManager.getInstance().getAutoUploadPref(player.getUuid());
         if (Boolean.TRUE.equals(pref)) {
             player.sendMessage(net.minecraft.text.Text.literal("Auto-uploading " + zipPath.getFileName().toString() + " to public endpoint...").formatted(net.minecraft.util.Formatting.YELLOW), false);
-            CompletableFuture.runAsync(() -> doActualUpload(zipPath, player));
+            com.svcntrl.SvcntrlMod.runAsync(() -> doActualUpload(zipPath, player));
             return;
         } else if (Boolean.FALSE.equals(pref)) {
             return;

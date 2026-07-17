@@ -254,7 +254,7 @@ public class SaveTask implements TaskScheduler.TickTask {
         }
         root.put("Entities", entityList);
 
-        java.util.concurrent.CompletableFuture.runAsync(() -> {
+        com.svcntrl.SvcntrlMod.runAsync(() -> {
             try {
                 Path filePath = ProjectManager.getInstance().getSnapshotPath(project, branchName, category, snapshotId);
                 Files.createDirectories(filePath.getParent());

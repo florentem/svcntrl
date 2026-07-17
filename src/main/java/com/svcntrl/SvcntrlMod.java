@@ -29,6 +29,27 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
     public static final String MOD_ID = "svcntrl";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
+    private static final java.util.concurrent.ExecutorService EXECUTOR = java.util.concurrent.Executors.newFixedThreadPool(
+        Math.max(2, Runtime.getRuntime().availableProcessors() / 2),
+        runnable -> {
+            Thread t = new Thread(runnable, "Svcntrl-Worker");
+            t.setDaemon(true);
+            return t;
+        }
+    );
+
+    public static java.util.concurrent.ExecutorService getExecutor() {
+        return EXECUTOR;
+    }
+
+    public static java.util.concurrent.CompletableFuture<Void> runAsync(Runnable runnable) {
+        return java.util.concurrent.CompletableFuture.runAsync(runnable, EXECUTOR);
+    }
+
+    public static <U> java.util.concurrent.CompletableFuture<U> supplyAsync(java.util.function.Supplier<U> supplier) {
+        return java.util.concurrent.CompletableFuture.supplyAsync(supplier, EXECUTOR);
+    }
+
     @Override
     public void onInitialize() {
         LOGGER.info("[svcntrl] Initializing Svcntrl on the server...");

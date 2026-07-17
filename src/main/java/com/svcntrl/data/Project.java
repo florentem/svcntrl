@@ -14,7 +14,7 @@ public class Project {
     private BlockPos corner2;
     private String worldId;
 
-    private final Set<UUID> members = new HashSet<>();
+    private final Set<UUID> members = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     private String currentBranch = "main";
     private final Map<String, Branch> branches = new java.util.concurrent.ConcurrentHashMap<>();
@@ -82,14 +82,14 @@ public class Project {
 
     public int addManualSnapshot(String branchName, String description, UUID authorUuid, String authorName) {
         Branch branch = getOrCreateBranch(branchName);
-        int id = branch.nextManualId++;
+        int id = branch.nextManualId.getAndIncrement();
         branch.manualSnapshots.add(new SnapshotMeta(id, description, authorUuid, authorName, System.currentTimeMillis()));
         return id;
     }
 
     public int addAutoSnapshot(String branchName, String description, UUID authorUuid, String authorName) {
         Branch branch = getOrCreateBranch(branchName);
-        int id = branch.nextAutoId++;
+        int id = branch.nextAutoId.getAndIncrement();
         branch.autoSnapshots.add(new SnapshotMeta(id, description, authorUuid, authorName, System.currentTimeMillis()));
         return id;
     }
@@ -118,7 +118,7 @@ public class Project {
             
             branch.autoSnapshots.remove(toRemove);
             final SnapshotMeta finalToRemove = toRemove;
-            java.util.concurrent.CompletableFuture.runAsync(() -> {
+            com.svcntrl.SvcntrlMod.runAsync(() -> {
                 try {
                     java.nio.file.Path snapshotFile = ProjectManager.getInstance().getSnapshotPath(this, branchName, "auto", finalToRemove.getId());
                     java.nio.file.Files.deleteIfExists(snapshotFile);
@@ -212,8 +212,8 @@ public class Project {
 
     public static class Branch {
         private String name;
-        private int nextManualId = 1;
-        private int nextAutoId = 1;
+        private java.util.concurrent.atomic.AtomicInteger nextManualId = new java.util.concurrent.atomic.AtomicInteger(1);
+        private java.util.concurrent.atomic.AtomicInteger nextAutoId = new java.util.concurrent.atomic.AtomicInteger(1);
         private final List<SnapshotMeta> manualSnapshots = java.util.Collections.synchronizedList(new ArrayList<>());
         private final List<SnapshotMeta> autoSnapshots = java.util.Collections.synchronizedList(new LinkedList<>());
 
@@ -223,10 +223,10 @@ public class Project {
 
         public String getName() { return name; }
         public void setName(String name) { this.name = name; }
-        public int getNextManualId() { return nextManualId; }
-        public void setNextManualId(int nextManualId) { this.nextManualId = nextManualId; }
-        public int getNextAutoId() { return nextAutoId; }
-        public void setNextAutoId(int nextAutoId) { this.nextAutoId = nextAutoId; }
+        public int getNextManualId() { return nextManualId.get(); }
+        public void setNextManualId(int nextManualId) { this.nextManualId.set(nextManualId); }
+        public int getNextAutoId() { return nextAutoId.get(); }
+        public void setNextAutoId(int nextAutoId) { this.nextAutoId.set(nextAutoId); }
         public List<SnapshotMeta> getManualSnapshots() { return Collections.unmodifiableList(manualSnapshots); }
         public List<SnapshotMeta> getAutoSnapshots() { return Collections.unmodifiableList(autoSnapshots); }
         

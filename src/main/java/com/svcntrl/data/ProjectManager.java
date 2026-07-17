@@ -119,7 +119,7 @@ public class ProjectManager {
             if (oldFuture != null && !oldFuture.isDone()) {
                 oldFuture.thenRunAsync(deleteAction);
             } else {
-                java.util.concurrent.CompletableFuture.runAsync(deleteAction);
+                com.svcntrl.SvcntrlMod.runAsync(deleteAction);
             }
 
             activeProjects.entrySet().removeIf(entry -> entry.getValue().equalsIgnoreCase(name));
@@ -301,7 +301,7 @@ public class ProjectManager {
         }
         obj.add("autoUpload", uploads);
         
-        lastPrefsFuture = java.util.concurrent.CompletableFuture.runAsync(() -> {
+        lastPrefsFuture = com.svcntrl.SvcntrlMod.runAsync(() -> {
             try {
                 Files.createDirectories(dataDir);
                 try (Writer writer = Files.newBufferedWriter(prefsFile)) {
@@ -326,7 +326,7 @@ public class ProjectManager {
 
     public void deleteBranchDir(Project project, String branchName) {
         if (dataDir == null) return;
-        java.util.concurrent.CompletableFuture.runAsync(() -> {
+        com.svcntrl.SvcntrlMod.runAsync(() -> {
             try {
                 Path branchDir = getProjectDir(project).resolve(branchName).normalize();
                 if (!branchDir.startsWith(dataDir.normalize())) throw new IllegalArgumentException("Path traversal attempt in branch: " + branchName);
@@ -385,7 +385,7 @@ public class ProjectManager {
                 }
             };
             if (oldFuture == null || oldFuture.isDone()) {
-                return java.util.concurrent.CompletableFuture.runAsync(saveTask);
+                return com.svcntrl.SvcntrlMod.runAsync(saveTask);
             } else {
                 return oldFuture.thenRunAsync(saveTask);
             }

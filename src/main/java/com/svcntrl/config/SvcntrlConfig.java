@@ -45,7 +45,14 @@ public class SvcntrlConfig {
                     if (loaded.outlineParticle == null) loaded.outlineParticle = "minecraft:flame";
                     if (loaded.outlineFrequencyTicks <= 0) loaded.outlineFrequencyTicks = 15;
                     if (loaded.customExportEndpoint == null) loaded.customExportEndpoint = "";
-                    if (loaded.maxRegionVolume <= 0) loaded.maxRegionVolume = 5_000_000;
+                    
+                    // Enforce hard limits to prevent Integer Overflow (max 100M blocks)
+                    if (loaded.maxRegionVolume <= 0 || loaded.maxRegionVolume > 100_000_000) loaded.maxRegionVolume = 100_000_000;
+                    
+                    // Enforce hard limits for task budget to prevent server freeze (min 0.1ms, max 50ms)
+                    if (loaded.taskBudgetNs < 100_000L) loaded.taskBudgetNs = 100_000L;
+                    if (loaded.taskBudgetNs > 50_000_000L) loaded.taskBudgetNs = 50_000_000L;
+                    
                     if (loaded.raycastParticlePool == null || loaded.raycastParticlePool.length == 0) {
                         loaded.raycastParticlePool = new SvcntrlConfig().raycastParticlePool;
                     }
