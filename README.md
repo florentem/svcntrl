@@ -44,8 +44,8 @@ Export your builds directly to `.litematic` files. In single-player, they save d
 **Cloud Uploads:** If `allowPublicExport` is enabled in the server config, exporting will automatically upload your `.litematic` file to a temporary public cloud storage (`tmpfiles.org`) and generate a clickable download link in chat.
 
 ### Teamwork & Access Control
-- `/svcntrl trust <player>` - Give another player permission to manage your project.
-- `/svcntrl untrust <player>` - Revoke access.
+- `/svcntrl project trust <player>` - Give another player permission to manage your project.
+- `/svcntrl project untrust <player>` - Revoke access.
 *(Server Administrators (OP Level 3+) or players with the `svcntrl.admin` permission bypass these restrictions and can manage any project on the server).*
 
 ## Build
