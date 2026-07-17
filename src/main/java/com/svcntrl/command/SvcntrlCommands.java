@@ -92,7 +92,9 @@ public class SvcntrlCommands {
                     .then(literal("delete").requires(requirePerm("svcntrl.command.branch.delete"))
                         .then(argument("name", StringArgumentType.word())
                             .suggests((ctx, builder) -> suggestBranches(ctx, builder))
-                            .executes(ctx -> executeBranchDelete(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))
+                            .executes(ctx -> executeBranchDelete(ctx.getSource(), StringArgumentType.getString(ctx, "name"), false))
+                            .then(literal("force")
+                                .executes(ctx -> executeBranchDelete(ctx.getSource(), StringArgumentType.getString(ctx, "name"), true)))))
                 )
 
                 // Quick actions (defaults to current project & branch)
@@ -564,28 +566,7 @@ public class SvcntrlCommands {
         return null;
     }
 
-    private static final java.util.Map<java.util.UUID, Long> pendingConfirms = new java.util.concurrent.ConcurrentHashMap<>();
-    private static final java.util.Map<java.util.UUID, String> pendingConfirmCmds = new java.util.concurrent.ConcurrentHashMap<>();
 
-    private static boolean checkConfirmation(ServerCommandSource source, String commandDesc) {
-        ServerPlayerEntity player = source.getPlayer();
-        if (player == null) return false;
-        java.util.UUID uuid = player.getUuid();
-        long now = System.currentTimeMillis();
-        
-        if (pendingConfirms.containsKey(uuid) && pendingConfirmCmds.containsKey(uuid) 
-                && pendingConfirmCmds.get(uuid).equals(commandDesc)
-                && (now - pendingConfirms.get(uuid) < 15000)) {
-            pendingConfirms.remove(uuid);
-            pendingConfirmCmds.remove(uuid);
-            return true;
-        } else {
-            pendingConfirms.put(uuid, now);
-            pendingConfirmCmds.put(uuid, commandDesc);
-            source.sendError(net.minecraft.text.Text.literal("Are you sure? This action is destructive! Run the exact same command again within 15 seconds to confirm."));
-            return false;
-        }
-    }
 
     private static int executeHelp(ServerCommandSource source) {
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_commands").formatted(Formatting.GOLD), false);
@@ -947,8 +928,11 @@ public class SvcntrlCommands {
         return 1;
     }
 
-    private static int executeBranchDelete(ServerCommandSource source, String nameArg) {
-        if (!checkConfirmation(source, "branchDelete " + nameArg)) return 0;
+    private static int executeBranchDelete(ServerCommandSource source, String nameArg, boolean force) {
+        if (!force) {
+            source.sendError(Text.literal("Are you sure? Delete branch command: /svcntrl branch delete " + nameArg + " force"));
+            return 0;
+        }
         String name = nameArg.toLowerCase(java.util.Locale.ROOT);
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
@@ -1064,7 +1048,6 @@ public class SvcntrlCommands {
     }
 
     private static int executeRestore(ServerCommandSource source, String category, int id, String branchArg, boolean noSave, boolean excludeIntersections) {
-        if (!checkConfirmation(source, "restore " + category + " " + id + " " + branchArg)) return 0;
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
@@ -1110,7 +1093,6 @@ public class SvcntrlCommands {
     }
 
     private static int executeRestorePatch(ServerCommandSource source, String category, int targetId, int baseId, boolean noSave, boolean excludeIntersections) {
-        if (!checkConfirmation(source, "restorePatch " + category + " " + targetId + " " + baseId)) return 0;
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
