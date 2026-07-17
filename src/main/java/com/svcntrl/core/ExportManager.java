@@ -555,7 +555,7 @@ public class ExportManager {
         NbtList tBEList = targetRoot.getListOrEmpty("BlockEntities");
         for (int i = 0; i < tBEList.size(); i++) {
             NbtCompound be = tBEList.getCompoundOrEmpty(i);
-            int idx = be.getInt("X", 0) + be.getInt("Y", 0) * sizeX + be.getInt("Z", 0) * sizeX * sizeY;
+            int idx = (be.getInt("Z", 0) * sizeX * sizeY) + (be.getInt("Y", 0) * sizeX) + be.getInt("X", 0);
             tBEs.put(idx, be.getCompoundOrEmpty("Data"));
         }
 
@@ -563,7 +563,7 @@ public class ExportManager {
         NbtList bBEList = baseRoot.getListOrEmpty("BlockEntities");
         for (int i = 0; i < bBEList.size(); i++) {
             NbtCompound be = bBEList.getCompoundOrEmpty(i);
-            int idx = be.getInt("X", 0) + be.getInt("Y", 0) * sizeX + be.getInt("Z", 0) * sizeX * sizeY;
+            int idx = (be.getInt("Z", 0) * sizeX * sizeY) + (be.getInt("Y", 0) * sizeX) + be.getInt("X", 0);
             bBEs.put(idx, be.getCompoundOrEmpty("Data"));
         }
 

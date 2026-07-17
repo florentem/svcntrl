@@ -162,7 +162,7 @@ public class AreaSerializer {
                 NbtList tBEList = targetRoot.getListOrEmpty("BlockEntities");
                 for (int i = 0; i < tBEList.size(); i++) {
                     NbtCompound be = tBEList.getCompoundOrEmpty(i);
-                    int idx = be.getInt("X", 0) + be.getInt("Y", 0) * sizeX + be.getInt("Z", 0) * sizeX * sizeY;
+                    int idx = (be.getInt("Z", 0) * sizeX * sizeY) + (be.getInt("Y", 0) * sizeX) + be.getInt("X", 0);
                     tBEs.put(idx, be.getCompoundOrEmpty("Data"));
                 }
 
@@ -170,7 +170,7 @@ public class AreaSerializer {
                 NbtList bBEList = baseRoot.getListOrEmpty("BlockEntities");
                 for (int i = 0; i < bBEList.size(); i++) {
                     NbtCompound be = bBEList.getCompoundOrEmpty(i);
-                    int idx = be.getInt("X", 0) + be.getInt("Y", 0) * sizeX + be.getInt("Z", 0) * sizeX * sizeY;
+                    int idx = (be.getInt("Z", 0) * sizeX * sizeY) + (be.getInt("Y", 0) * sizeX) + be.getInt("X", 0);
                     bBEs.put(idx, be.getCompoundOrEmpty("Data"));
                 }
 
@@ -190,20 +190,24 @@ public class AreaSerializer {
                 NbtList entitiesToRemove = new NbtList();
                 
                 // Very basic diff: compare NBT excluding UUID and Pos
+                java.util.Set<NbtCompound> baseEntitiesSet = new java.util.HashSet<>();
+                for (int i = 0; i < bEntities.size(); i++) {
+                    NbtCompound be = bEntities.getCompoundOrEmpty(i).copy();
+                    be.remove("UUID");
+                    baseEntitiesSet.add(be);
+                }
+
+                java.util.Set<NbtCompound> targetEntitiesSet = new java.util.HashSet<>();
                 for (int i = 0; i < tEntities.size(); i++) {
                     NbtCompound te = tEntities.getCompoundOrEmpty(i).copy();
                     te.remove("UUID");
-                    
-                    boolean found = false;
-                    for (int j = 0; j < bEntities.size(); j++) {
-                        NbtCompound be = bEntities.getCompoundOrEmpty(j).copy();
-                        be.remove("UUID");
-                        if (te.equals(be)) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
+                    targetEntitiesSet.add(te);
+                }
+                
+                for (int i = 0; i < tEntities.size(); i++) {
+                    NbtCompound te = tEntities.getCompoundOrEmpty(i).copy();
+                    te.remove("UUID");
+                    if (!baseEntitiesSet.contains(te)) {
                         entitiesToSpawn.add(tEntities.getCompoundOrEmpty(i));
                     }
                 }
@@ -211,17 +215,7 @@ public class AreaSerializer {
                 for (int i = 0; i < bEntities.size(); i++) {
                     NbtCompound be = bEntities.getCompoundOrEmpty(i).copy();
                     be.remove("UUID");
-                    
-                    boolean found = false;
-                    for (int j = 0; j < tEntities.size(); j++) {
-                        NbtCompound te = tEntities.getCompoundOrEmpty(j).copy();
-                        te.remove("UUID");
-                        if (be.equals(te)) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
+                    if (!targetEntitiesSet.contains(be)) {
                         entitiesToRemove.add(bEntities.getCompoundOrEmpty(i));
                     }
                 }
@@ -544,7 +538,7 @@ public class AreaSerializer {
                         int rx = beNbt.getInt("X", 0);
                         int ry = beNbt.getInt("Y", 0);
                         int rz = beNbt.getInt("Z", 0);
-                        int flatIndex = rx + ry * width + rz * width * height;
+                        int flatIndex = (rz * width * height) + (ry * width) + rx;
                         if (!patchMask[flatIndex]) {
                             currentIndex++;
                             ops++;

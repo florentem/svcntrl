@@ -35,12 +35,14 @@ public class UXManager {
     }
 
     public boolean toggleOutline(UUID uuid) {
-        if (outlinePlayers.contains(uuid)) {
-            outlinePlayers.remove(uuid);
-            return false;
-        } else {
-            outlinePlayers.add(uuid);
-            return true;
+        synchronized (outlinePlayers) {
+            if (outlinePlayers.contains(uuid)) {
+                outlinePlayers.remove(uuid);
+                return false;
+            } else {
+                outlinePlayers.add(uuid);
+                return true;
+            }
         }
     }
 
@@ -140,7 +142,7 @@ public class UXManager {
                     String worldId = player.getWorld().getRegistryKey().getValue().toString();
                     for (Project project : ProjectManager.getInstance().getAllProjects()) {
                         if (!project.getWorldId().equals(worldId)) continue;
-                        if (project.getMin().getSquaredDistance(player.getBlockPos()) > 16384 && project.getMax().getSquaredDistance(player.getBlockPos()) > 16384) continue;
+                        if (!project.contains(player.getBlockPos()) && project.getMin().getSquaredDistance(player.getBlockPos()) > 16384 && project.getMax().getSquaredDistance(player.getBlockPos()) > 16384) continue;
                         int index = Math.abs(project.getName().hashCode()) % pool.length;
                         spawnOutlineParticles(player, project, pool[index]);
                     }

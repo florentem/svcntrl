@@ -23,6 +23,7 @@ public class ProjectManager {
     private final Set<Project> lockedProjects = ConcurrentHashMap.newKeySet();
     private final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.CompletableFuture<Void>> saveTasks = new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<UUID, Boolean> autoUploadPrefs = new ConcurrentHashMap<>();
+    private final Set<String> deletingProjects = ConcurrentHashMap.newKeySet();
 
     private ProjectManager() {
     }
@@ -91,7 +92,7 @@ public class ProjectManager {
 
     public boolean createProject(Project project) {
         String key = project.getName().toLowerCase(Locale.ROOT);
-        if (projects.putIfAbsent(key, project) != null) {
+        if (deletingProjects.contains(key) || projects.putIfAbsent(key, project) != null) {
             return false;
         }
         saveProject(project);
@@ -99,8 +100,10 @@ public class ProjectManager {
     }
 
     public void removeProject(String name) {
-        Project project = projects.remove(name.toLowerCase(Locale.ROOT));
+        String key = name.toLowerCase(Locale.ROOT);
+        Project project = projects.remove(key);
         if (project != null) {
+            deletingProjects.add(key);
             Path projectDir = getProjectDir(project);
             Runnable deleteAction = () -> {
                 if (java.nio.file.Files.exists(projectDir)) {
@@ -115,11 +118,18 @@ public class ProjectManager {
                     }
                 }
             };
+            Runnable finalDeleteAction = () -> {
+                try {
+                    deleteAction.run();
+                } finally {
+                    deletingProjects.remove(key);
+                }
+            };
             java.util.concurrent.CompletableFuture<Void> oldFuture = saveTasks.remove(project.getName());
             if (oldFuture != null && !oldFuture.isDone()) {
-                oldFuture.thenRunAsync(deleteAction);
+                oldFuture.thenRunAsync(finalDeleteAction);
             } else {
-                com.svcntrl.SvcntrlMod.runAsync(deleteAction);
+                com.svcntrl.SvcntrlMod.runAsync(finalDeleteAction);
             }
 
             activeProjects.entrySet().removeIf(entry -> entry.getValue().equalsIgnoreCase(name));

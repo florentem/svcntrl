@@ -370,8 +370,11 @@ public class PreviewManager {
                     double absZ = min.getZ() + entityNbt.getDouble("svcntrl_RelZ", 0.0);
 
                     EntityType.loadEntityWithPassengers(entityNbt, world, SpawnReason.STRUCTURE, (entity) -> {
-
                         entity.setPosition(absX, absY, absZ);
+                        entity.setUuid(UUID.randomUUID());
+                        int fakeId = net.minecraft.entity.Entity.nextEntityId() * -1;
+                        if (fakeId > 0) fakeId = -fakeId; // Just to be safe it's negative
+                        entity.setId(fakeId);
                         
                         player.networkHandler.sendPacket(new EntitySpawnS2CPacket(
                             entity.getId(), entity.getUuid(),

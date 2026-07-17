@@ -52,6 +52,8 @@ public class SvcntrlCommands {
 
                 // /svcntrl project ...
                 .then(literal("project")
+                    .then(literal("list").requires(requirePerm("svcntrl.command.project.list"))
+                        .executes(ctx -> executeProjectList(ctx.getSource())))
                     .then(literal("create").requires(requirePerm("svcntrl.command.project.create"))
                         .then(argument("name", StringArgumentType.word())
                             .executes(ctx -> executeCreate(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))
@@ -562,6 +564,29 @@ public class SvcntrlCommands {
         return null;
     }
 
+    private static final java.util.Map<java.util.UUID, Long> pendingConfirms = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<java.util.UUID, String> pendingConfirmCmds = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static boolean checkConfirmation(ServerCommandSource source, String commandDesc) {
+        ServerPlayerEntity player = source.getPlayer();
+        if (player == null) return false;
+        java.util.UUID uuid = player.getUuid();
+        long now = System.currentTimeMillis();
+        
+        if (pendingConfirms.containsKey(uuid) && pendingConfirmCmds.containsKey(uuid) 
+                && pendingConfirmCmds.get(uuid).equals(commandDesc)
+                && (now - pendingConfirms.get(uuid) < 15000)) {
+            pendingConfirms.remove(uuid);
+            pendingConfirmCmds.remove(uuid);
+            return true;
+        } else {
+            pendingConfirms.put(uuid, now);
+            pendingConfirmCmds.put(uuid, commandDesc);
+            source.sendError(net.minecraft.text.Text.literal("Are you sure? This action is destructive! Run the exact same command again within 15 seconds to confirm."));
+            return false;
+        }
+    }
+
     private static int executeHelp(ServerCommandSource source) {
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_commands").formatted(Formatting.GOLD), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_project_create_name_cr").formatted(Formatting.YELLOW), false);
@@ -587,6 +612,30 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         PendingCreateManager.getInstance().handleRightClick(player, player.getBlockPos());
+        return 1;
+    }
+
+    private static int executeProjectList(ServerCommandSource source, int page) {
+        ServerPlayerEntity player = source.getPlayer();
+        if (player == null) return 0;
+        List<Project> projects = ProjectManager.getInstance().getProjectsForPlayer(player.getUuid());
+        if (projects.isEmpty()) {
+            source.sendFeedback(() -> Text.literal("You have no projects.").formatted(Formatting.YELLOW), false);
+            return 1;
+        }
+        
+        int perPage = 5;
+        int totalPages = (int) Math.ceil((double) projects.size() / perPage);
+        int finalPage = Math.max(1, Math.min(page, totalPages));
+        int start = (finalPage - 1) * perPage;
+        int end = Math.min(start + perPage, projects.size());
+        
+        source.sendFeedback(() -> Text.literal("=== Your Projects (Page " + finalPage + "/" + totalPages + ") ===").formatted(Formatting.AQUA, Formatting.BOLD), false);
+        for (int i = start; i < end; i++) {
+            Project p = projects.get(i);
+            String role = p.isOwner(player.getUuid()) ? "Owner" : "Member";
+            source.sendFeedback(() -> Text.literal("- " + p.getName() + " (" + role + ")").formatted(Formatting.GREEN), false);
+        }
         return 1;
     }
 
@@ -692,6 +741,8 @@ public class SvcntrlCommands {
         if (project.addMember(targetUuid)) {
             ProjectManager.getInstance().saveProject(project);
             source.sendFeedback(() -> Text.literal("Added " + playerName + " to project.").formatted(Formatting.GREEN), false);
+        } else {
+            source.sendError(Text.literal(playerName + " is already in the project."));
         }
         return 1;
     }
@@ -708,6 +759,8 @@ public class SvcntrlCommands {
         if (project.removeMember(targetUuid)) {
             ProjectManager.getInstance().saveProject(project);
             source.sendFeedback(() -> Text.literal("Removed " + playerName + " from project.").formatted(Formatting.GREEN), false);
+        } else {
+            source.sendError(Text.literal(playerName + " is not in the project."));
         }
         return 1;
     }
@@ -895,6 +948,7 @@ public class SvcntrlCommands {
     }
 
     private static int executeBranchDelete(ServerCommandSource source, String nameArg) {
+        if (!checkConfirmation(source, "branchDelete " + nameArg)) return 0;
         String name = nameArg.toLowerCase(java.util.Locale.ROOT);
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
@@ -1010,6 +1064,7 @@ public class SvcntrlCommands {
     }
 
     private static int executeRestore(ServerCommandSource source, String category, int id, String branchArg, boolean noSave, boolean excludeIntersections) {
+        if (!checkConfirmation(source, "restore " + category + " " + id + " " + branchArg)) return 0;
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
@@ -1055,6 +1110,7 @@ public class SvcntrlCommands {
     }
 
     private static int executeRestorePatch(ServerCommandSource source, String category, int targetId, int baseId, boolean noSave, boolean excludeIntersections) {
+        if (!checkConfirmation(source, "restorePatch " + category + " " + targetId + " " + baseId)) return 0;
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());

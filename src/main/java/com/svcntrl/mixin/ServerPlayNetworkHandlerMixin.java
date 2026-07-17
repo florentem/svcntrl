@@ -14,14 +14,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(ServerCommonNetworkHandler.class)
+@Mixin(ServerPlayNetworkHandler.class)
 public class ServerPlayNetworkHandlerMixin {
     @Inject(method = "sendPacket(Lnet/minecraft/network/packet/Packet;)V", at = @At("HEAD"), cancellable = true)
     private void onSendPacketHead(Packet<?> packet, CallbackInfo ci) {
         if (!PreviewManager.getInstance().hasAnyPreviews()) return;
-        ServerCommonNetworkHandler handler = (ServerCommonNetworkHandler) (Object) this;
-        if (handler instanceof ServerPlayNetworkHandler playHandler) {
-            if (!PreviewManager.getInstance().hasPreview(playHandler.getPlayer().getUuid())) return;
+        ServerPlayNetworkHandler playHandler = (ServerPlayNetworkHandler) (Object) this;
+        if (!PreviewManager.getInstance().hasPreview(playHandler.getPlayer().getUuid())) return;
 
             Entity entityToHide = null;
             if (packet instanceof EntitySpawnS2CPacket spawnPacket) {
@@ -30,19 +29,15 @@ public class ServerPlayNetworkHandlerMixin {
                 entityToHide = ((net.minecraft.server.world.ServerWorld)playHandler.getPlayer().getWorld()).getEntityById(trackerPacket.id());
             }
             
-            if (entityToHide != null && PreviewManager.getInstance().isEntityHidden(playHandler.getPlayer(), entityToHide)) {
-                ci.cancel();
-            }
+        if (entityToHide != null && PreviewManager.getInstance().isEntityHidden(playHandler.getPlayer(), entityToHide)) {
+            ci.cancel();
         }
-    }
     @Inject(method = "sendPacket(Lnet/minecraft/network/packet/Packet;)V", at = @At("TAIL"))
     private void onSendPacket(Packet<?> packet, CallbackInfo ci) {
         if (!PreviewManager.getInstance().hasAnyPreviews()) return;
         if (packet instanceof ChunkDataS2CPacket chunkPacket) {
-            ServerCommonNetworkHandler handler = (ServerCommonNetworkHandler) (Object) this;
-            if (handler instanceof ServerPlayNetworkHandler playHandler) {
-                PreviewManager.getInstance().onChunkSent(playHandler.getPlayer(), chunkPacket.getChunkX(), chunkPacket.getChunkZ());
-            }
+            ServerPlayNetworkHandler playHandler = (ServerPlayNetworkHandler) (Object) this;
+            PreviewManager.getInstance().onChunkSent(playHandler.getPlayer(), chunkPacket.getChunkX(), chunkPacket.getChunkZ());
         }
     }
 }

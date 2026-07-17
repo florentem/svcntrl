@@ -26,3 +26,5 @@ out/
 remappedSrc/
 bin/
 
+# docs
+docs/

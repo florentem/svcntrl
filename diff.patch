@@ -1,0 +1,608 @@
+diff --git a/gradle.properties b/gradle.properties
+index 463fd12..c1f8260 100644
+--- a/gradle.properties
++++ b/gradle.properties
+@@ -11,8 +11,7 @@ loader_version=0.16.13
+ # Fabric API
+ fabric_api_version=0.136.1+1.21.8
+ loom_version=1.10-SNAPSHOT
+-
+ # Mod Properties
+-mod_version=1.1.2
++mod_version=1.1.3
+ maven_group=com.svcntrl
+ archives_base_name=svcntrl
+diff --git a/src/main/java/com/svcntrl/SvcntrlMod.java b/src/main/java/com/svcntrl/SvcntrlMod.java
+index a572678..1937473 100644
+--- a/src/main/java/com/svcntrl/SvcntrlMod.java
++++ b/src/main/java/com/svcntrl/SvcntrlMod.java
+@@ -29,6 +29,27 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
+     public static final String MOD_ID = "svcntrl";
+     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+ 
++    private static final java.util.concurrent.ExecutorService EXECUTOR = java.util.concurrent.Executors.newFixedThreadPool(
++        Math.max(2, Runtime.getRuntime().availableProcessors() / 2),
++        runnable -> {
++            Thread t = new Thread(runnable, "Svcntrl-Worker");
++            t.setDaemon(true);
++            return t;
++        }
++    );
++
++    public static java.util.concurrent.ExecutorService getExecutor() {
++        return EXECUTOR;
++    }
++
++    public static java.util.concurrent.CompletableFuture<Void> runAsync(Runnable runnable) {
++        return java.util.concurrent.CompletableFuture.runAsync(runnable, EXECUTOR);
++    }
++
++    public static <U> java.util.concurrent.CompletableFuture<U> supplyAsync(java.util.function.Supplier<U> supplier) {
++        return java.util.concurrent.CompletableFuture.supplyAsync(supplier, EXECUTOR);
++    }
++
+     @Override
+     public void onInitialize() {
+         LOGGER.info("[svcntrl] Initializing Svcntrl on the server...");
+diff --git a/src/main/java/com/svcntrl/command/SvcntrlCommands.java b/src/main/java/com/svcntrl/command/SvcntrlCommands.java
+index 5b8dc64..dd5b14e 100644
+--- a/src/main/java/com/svcntrl/command/SvcntrlCommands.java
++++ b/src/main/java/com/svcntrl/command/SvcntrlCommands.java
+@@ -944,7 +944,7 @@ public class SvcntrlCommands {
+             branch.removeAutoSnapshot(id);
+         }
+         
+-        java.util.concurrent.CompletableFuture.runAsync(() -> {
++        com.svcntrl.SvcntrlMod.runAsync(() -> {
+             try {
+                 java.nio.file.Files.deleteIfExists(snapshotPath);
+                 ProjectManager.getInstance().saveProject(project);
+@@ -1251,7 +1251,7 @@ public class SvcntrlCommands {
+         }
+ 
+         source.sendFeedback(() -> Text.literal("Uploading " + file.getFileName().toString() + " to public endpoint...").formatted(Formatting.YELLOW), false);
+-        CompletableFuture.runAsync(() -> {
++        com.svcntrl.SvcntrlMod.runAsync(() -> {
+             com.svcntrl.core.ExportManager.doActualUpload(file, player);
+         });
+         
+diff --git a/src/main/java/com/svcntrl/config/SvcntrlConfig.java b/src/main/java/com/svcntrl/config/SvcntrlConfig.java
+index e6a2e91..81a20cd 100644
+--- a/src/main/java/com/svcntrl/config/SvcntrlConfig.java
++++ b/src/main/java/com/svcntrl/config/SvcntrlConfig.java
+@@ -45,7 +45,14 @@ public class SvcntrlConfig {
+                     if (loaded.outlineParticle == null) loaded.outlineParticle = "minecraft:flame";
+                     if (loaded.outlineFrequencyTicks <= 0) loaded.outlineFrequencyTicks = 15;
+                     if (loaded.customExportEndpoint == null) loaded.customExportEndpoint = "";
+-                    if (loaded.maxRegionVolume <= 0) loaded.maxRegionVolume = 5_000_000;
++                    
++                    // Enforce hard limits to prevent Integer Overflow (max 100M blocks)
++                    if (loaded.maxRegionVolume <= 0 || loaded.maxRegionVolume > 100_000_000) loaded.maxRegionVolume = 100_000_000;
++                    
++                    // Enforce hard limits for task budget to prevent server freeze (min 0.1ms, max 50ms)
++                    if (loaded.taskBudgetNs < 100_000L) loaded.taskBudgetNs = 100_000L;
++                    if (loaded.taskBudgetNs > 50_000_000L) loaded.taskBudgetNs = 50_000_000L;
++                    
+                     if (loaded.raycastParticlePool == null || loaded.raycastParticlePool.length == 0) {
+                         loaded.raycastParticlePool = new SvcntrlConfig().raycastParticlePool;
+                     }
+diff --git a/src/main/java/com/svcntrl/core/AreaSerializer.java b/src/main/java/com/svcntrl/core/AreaSerializer.java
+index 9bfac23..6f9c5d8 100644
+--- a/src/main/java/com/svcntrl/core/AreaSerializer.java
++++ b/src/main/java/com/svcntrl/core/AreaSerializer.java
+@@ -70,9 +70,9 @@ public class AreaSerializer {
+         }
+ 
+         ProjectManager.getInstance().setProjectLocked(project, true);
+-        java.util.concurrent.CompletableFuture.runAsync(() -> {
++        com.svcntrl.SvcntrlMod.runAsync(() -> {
+             try {
+-                NbtCompound root = NbtIo.readCompressed(filePath, NbtSizeTracker.ofUnlimitedBytes());
++                NbtCompound root = NbtIo.readCompressed(filePath, NbtSizeTracker.of(512L * 1024L * 1024L));
+                 world.getServer().execute(() -> {
+                     try {
+                         BlockPos min = project.getMin();
+@@ -109,10 +109,10 @@ public class AreaSerializer {
+ 
+         ProjectManager.getInstance().setProjectLocked(project, true);
+         BlockPos min = project.getMin();
+-        java.util.concurrent.CompletableFuture.runAsync(() -> {
++        com.svcntrl.SvcntrlMod.runAsync(() -> {
+             try {
+-                NbtCompound targetRoot = net.minecraft.nbt.NbtIo.readCompressed(targetPath, net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes());
+-                NbtCompound baseRoot = net.minecraft.nbt.NbtIo.readCompressed(basePath, net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes());
++                NbtCompound targetRoot = net.minecraft.nbt.NbtIo.readCompressed(targetPath, net.minecraft.nbt.NbtSizeTracker.of(512L * 1024L * 1024L));
++                NbtCompound baseRoot = net.minecraft.nbt.NbtIo.readCompressed(basePath, net.minecraft.nbt.NbtSizeTracker.of(512L * 1024L * 1024L));
+ 
+                 boolean isV2Target = targetRoot.contains("Version") && targetRoot.getInt("Version", 1) == 2;
+                 boolean isV2Base = baseRoot.contains("Version") && baseRoot.getInt("Version", 1) == 2;
+@@ -705,7 +705,7 @@ public class AreaSerializer {
+             return null;
+         }
+         try {
+-            return NbtIo.readCompressed(filePath, NbtSizeTracker.ofUnlimitedBytes());
++            return NbtIo.readCompressed(filePath, NbtSizeTracker.of(512L * 1024L * 1024L));
+         } catch (IOException e) {
+             SvcntrlMod.LOGGER.error("[svcntrl] Failed to read snapshot: {}", filePath, e);
+             return null;
+diff --git a/src/main/java/com/svcntrl/core/ExportManager.java b/src/main/java/com/svcntrl/core/ExportManager.java
+index 7b43f56..c7e6ac6 100644
+--- a/src/main/java/com/svcntrl/core/ExportManager.java
++++ b/src/main/java/com/svcntrl/core/ExportManager.java
+@@ -135,7 +135,7 @@ public class ExportManager {
+     }
+ 
+     public static void exportSnapshot(Project project, String branchName, String category, int id, ServerPlayerEntity player) {
+-        CompletableFuture.runAsync(() -> {
++        com.svcntrl.SvcntrlMod.runAsync(() -> {
+             try {
+                 NbtCompound root = AreaSerializer.readSnapshot(project, branchName, category, id);
+                 if (root == null) {
+@@ -155,7 +155,7 @@ public class ExportManager {
+                 if (com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport && player.getServer().isDedicated()) {
+                     player.sendMessage(Text.translatable("svcntrl.msg.uploading_schematic_to_public").formatted(Formatting.YELLOW), false);
+ 
+-                    java.util.concurrent.CompletableFuture.runAsync(() -> {
++                    com.svcntrl.SvcntrlMod.runAsync(() -> {
+                         try {
+                             Path zipPath = exportDir.resolve(fileName + ".zip");
+                             try (java.util.zip.ZipOutputStream zout = new java.util.zip.ZipOutputStream(Files.newOutputStream(zipPath))) {
+@@ -181,7 +181,7 @@ public class ExportManager {
+     }
+ 
+     public static void exportProjectFull(Project project, ServerPlayerEntity player) {
+-        CompletableFuture.runAsync(() -> {
++        com.svcntrl.SvcntrlMod.runAsync(() -> {
+             try {
+                 Path projectDir = ProjectManager.getInstance().getProjectDir(project);
+                 if (!Files.exists(projectDir)) {
+@@ -204,7 +204,7 @@ public class ExportManager {
+                                 try {
+                                     String relPath = projectDir.relativize(path).toString().replace("\\", "/");
+                                     if (path.toString().endsWith(".nbt")) {
+-                                        NbtCompound snapRoot = net.minecraft.nbt.NbtIo.readCompressed(path, net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes());
++                                        NbtCompound snapRoot = net.minecraft.nbt.NbtIo.readCompressed(path, net.minecraft.nbt.NbtSizeTracker.of(512L * 1024L * 1024L));
+                                         String[] parts = path.getFileName().toString().replace(".nbt", "").split("_");
+                                         String cat = parts.length > 0 ? parts[0] : "snapshot";
+                                         int sid = 0;
+@@ -231,7 +231,7 @@ public class ExportManager {
+                             });
+                 }
+ 
+-                java.util.concurrent.CompletableFuture.runAsync(() -> {
++                com.svcntrl.SvcntrlMod.runAsync(() -> {
+                     uploadToTmpfiles(zipPath, player);
+                 });
+ 
+@@ -436,7 +436,7 @@ public class ExportManager {
+     }
+ 
+     public static void exportDiff(Project project, String targetBranch, String targetCategory, int targetId, String baseBranch, String baseCategory, int baseId, ServerPlayerEntity player) {
+-        java.util.concurrent.CompletableFuture.runAsync(() -> {
++        com.svcntrl.SvcntrlMod.runAsync(() -> {
+             try {
+                 Path targetPath = ProjectManager.getInstance().getSnapshotPath(project, targetBranch, targetCategory, targetId);
+                 Path basePath = ProjectManager.getInstance().getSnapshotPath(project, baseBranch, baseCategory, baseId);
+@@ -449,8 +449,8 @@ public class ExportManager {
+                 if (player != null) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.calculating_diff_and_generatin")
+                         .formatted(net.minecraft.util.Formatting.YELLOW), false);
+ 
+-                NbtCompound targetRoot = net.minecraft.nbt.NbtIo.readCompressed(targetPath, net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes());
+-                NbtCompound baseRoot = net.minecraft.nbt.NbtIo.readCompressed(basePath, net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes());
++                NbtCompound targetRoot = net.minecraft.nbt.NbtIo.readCompressed(targetPath, net.minecraft.nbt.NbtSizeTracker.of(512L * 1024L * 1024L));
++                NbtCompound baseRoot = net.minecraft.nbt.NbtIo.readCompressed(basePath, net.minecraft.nbt.NbtSizeTracker.of(512L * 1024L * 1024L));
+ 
+                 NbtCompound litematic = convertToLitematicDiff(targetRoot, baseRoot, project, targetCategory, targetId, baseId, player);
+                 
+@@ -467,7 +467,7 @@ public class ExportManager {
+                     player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.uploading_diff_schematic_pleas")
+                             .formatted(net.minecraft.util.Formatting.YELLOW), false);
+ 
+-                    java.util.concurrent.CompletableFuture.runAsync(() -> {
++                    com.svcntrl.SvcntrlMod.runAsync(() -> {
+                         try {
+                             Path zipPath = exportDir.resolve(fileName + ".zip");
+                             try (java.util.zip.ZipOutputStream zout = new java.util.zip.ZipOutputStream(Files.newOutputStream(zipPath))) {
+@@ -694,7 +694,7 @@ public class ExportManager {
+         Boolean pref = com.svcntrl.data.ProjectManager.getInstance().getAutoUploadPref(player.getUuid());
+         if (Boolean.TRUE.equals(pref)) {
+             player.sendMessage(net.minecraft.text.Text.literal("Auto-uploading " + zipPath.getFileName().toString() + " to public endpoint...").formatted(net.minecraft.util.Formatting.YELLOW), false);
+-            CompletableFuture.runAsync(() -> doActualUpload(zipPath, player));
++            com.svcntrl.SvcntrlMod.runAsync(() -> doActualUpload(zipPath, player));
+             return;
+         } else if (Boolean.FALSE.equals(pref)) {
+             return;
+diff --git a/src/main/java/com/svcntrl/core/PendingCreateManager.java b/src/main/java/com/svcntrl/core/PendingCreateManager.java
+index 8ac0f0c..43b346a 100644
+--- a/src/main/java/com/svcntrl/core/PendingCreateManager.java
++++ b/src/main/java/com/svcntrl/core/PendingCreateManager.java
+@@ -32,7 +32,7 @@ public class PendingCreateManager {
+         pending.entrySet().removeIf(entry -> {
+             if (now > entry.getValue().expiryTime) {
+                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());
+-                if (player != null) {
++                if (player != null && !player.isDisconnected()) {
+                     player.sendMessage(Text.literal("Project creation for '" + entry.getValue().projectName + "' timed out.").formatted(Formatting.RED), false);
+                 }
+                 return true;
+diff --git a/src/main/java/com/svcntrl/core/PreviewManager.java b/src/main/java/com/svcntrl/core/PreviewManager.java
+index f502ef7..7b356d8 100644
+--- a/src/main/java/com/svcntrl/core/PreviewManager.java
++++ b/src/main/java/com/svcntrl/core/PreviewManager.java
+@@ -133,7 +133,7 @@ public class PreviewManager {
+         pendingPreviews.add(player.getUuid());
+         player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.loading_snapshot_for_preview").formatted(net.minecraft.util.Formatting.YELLOW));
+         
+-        java.util.concurrent.CompletableFuture.supplyAsync(() -> {
++        com.svcntrl.SvcntrlMod.supplyAsync(() -> {
+             return AreaSerializer.readSnapshot(project, branchName, category, snapshotId);
+         }).thenAccept(root -> {
+             player.getServer().execute(() -> {
+@@ -143,8 +143,8 @@ public class PreviewManager {
+                     return;
+                 }
+ 
+-                activePreviews.put(player.getUuid(), new HashMap<>());
+-                activePreviewEntities.put(player.getUuid(), new java.util.HashSet<>());
++                activePreviews.put(player.getUuid(), new ConcurrentHashMap<>());
++                activePreviewEntities.put(player.getUuid(), ConcurrentHashMap.newKeySet());
+                 previewingProjects.put(player.getUuid(), project.getName());
+                 
+                 net.minecraft.util.math.Box bounds = new net.minecraft.util.math.Box(
+diff --git a/src/main/java/com/svcntrl/core/SaveTask.java b/src/main/java/com/svcntrl/core/SaveTask.java
+index c1923cb..baf4ba5 100644
+--- a/src/main/java/com/svcntrl/core/SaveTask.java
++++ b/src/main/java/com/svcntrl/core/SaveTask.java
+@@ -254,7 +254,7 @@ public class SaveTask implements TaskScheduler.TickTask {
+         }
+         root.put("Entities", entityList);
+ 
+-        java.util.concurrent.CompletableFuture.runAsync(() -> {
++        com.svcntrl.SvcntrlMod.runAsync(() -> {
+             try {
+                 Path filePath = ProjectManager.getInstance().getSnapshotPath(project, branchName, category, snapshotId);
+                 Files.createDirectories(filePath.getParent());
+diff --git a/src/main/java/com/svcntrl/data/Project.java b/src/main/java/com/svcntrl/data/Project.java
+index c892a6a..261c8fe 100644
+--- a/src/main/java/com/svcntrl/data/Project.java
++++ b/src/main/java/com/svcntrl/data/Project.java
+@@ -14,7 +14,7 @@ public class Project {
+     private BlockPos corner2;
+     private String worldId;
+ 
+-    private final Set<UUID> members = new HashSet<>();
++    private final Set<UUID> members = java.util.concurrent.ConcurrentHashMap.newKeySet();
+ 
+     private String currentBranch = "main";
+     private final Map<String, Branch> branches = new java.util.concurrent.ConcurrentHashMap<>();
+@@ -82,14 +82,14 @@ public class Project {
+ 
+     public int addManualSnapshot(String branchName, String description, UUID authorUuid, String authorName) {
+         Branch branch = getOrCreateBranch(branchName);
+-        int id = branch.nextManualId++;
++        int id = branch.nextManualId.getAndIncrement();
+         branch.manualSnapshots.add(new SnapshotMeta(id, description, authorUuid, authorName, System.currentTimeMillis()));
+         return id;
+     }
+ 
+     public int addAutoSnapshot(String branchName, String description, UUID authorUuid, String authorName) {
+         Branch branch = getOrCreateBranch(branchName);
+-        int id = branch.nextAutoId++;
++        int id = branch.nextAutoId.getAndIncrement();
+         branch.autoSnapshots.add(new SnapshotMeta(id, description, authorUuid, authorName, System.currentTimeMillis()));
+         return id;
+     }
+@@ -118,7 +118,7 @@ public class Project {
+             
+             branch.autoSnapshots.remove(toRemove);
+             final SnapshotMeta finalToRemove = toRemove;
+-            java.util.concurrent.CompletableFuture.runAsync(() -> {
++            com.svcntrl.SvcntrlMod.runAsync(() -> {
+                 try {
+                     java.nio.file.Path snapshotFile = ProjectManager.getInstance().getSnapshotPath(this, branchName, "auto", finalToRemove.getId());
+                     java.nio.file.Files.deleteIfExists(snapshotFile);
+@@ -212,8 +212,8 @@ public class Project {
+ 
+     public static class Branch {
+         private String name;
+-        private int nextManualId = 1;
+-        private int nextAutoId = 1;
++        private java.util.concurrent.atomic.AtomicInteger nextManualId = new java.util.concurrent.atomic.AtomicInteger(1);
++        private java.util.concurrent.atomic.AtomicInteger nextAutoId = new java.util.concurrent.atomic.AtomicInteger(1);
+         private final List<SnapshotMeta> manualSnapshots = java.util.Collections.synchronizedList(new ArrayList<>());
+         private final List<SnapshotMeta> autoSnapshots = java.util.Collections.synchronizedList(new LinkedList<>());
+ 
+@@ -223,10 +223,10 @@ public class Project {
+ 
+         public String getName() { return name; }
+         public void setName(String name) { this.name = name; }
+-        public int getNextManualId() { return nextManualId; }
+-        public void setNextManualId(int nextManualId) { this.nextManualId = nextManualId; }
+-        public int getNextAutoId() { return nextAutoId; }
+-        public void setNextAutoId(int nextAutoId) { this.nextAutoId = nextAutoId; }
++        public int getNextManualId() { return nextManualId.get(); }
++        public void setNextManualId(int nextManualId) { this.nextManualId.set(nextManualId); }
++        public int getNextAutoId() { return nextAutoId.get(); }
++        public void setNextAutoId(int nextAutoId) { this.nextAutoId.set(nextAutoId); }
+         public List<SnapshotMeta> getManualSnapshots() { return Collections.unmodifiableList(manualSnapshots); }
+         public List<SnapshotMeta> getAutoSnapshots() { return Collections.unmodifiableList(autoSnapshots); }
+         
+diff --git a/src/main/java/com/svcntrl/data/ProjectManager.java b/src/main/java/com/svcntrl/data/ProjectManager.java
+index aad1690..6052a34 100644
+--- a/src/main/java/com/svcntrl/data/ProjectManager.java
++++ b/src/main/java/com/svcntrl/data/ProjectManager.java
+@@ -119,7 +119,7 @@ public class ProjectManager {
+             if (oldFuture != null && !oldFuture.isDone()) {
+                 oldFuture.thenRunAsync(deleteAction);
+             } else {
+-                java.util.concurrent.CompletableFuture.runAsync(deleteAction);
++                com.svcntrl.SvcntrlMod.runAsync(deleteAction);
+             }
+ 
+             activeProjects.entrySet().removeIf(entry -> entry.getValue().equalsIgnoreCase(name));
+@@ -301,7 +301,7 @@ public class ProjectManager {
+         }
+         obj.add("autoUpload", uploads);
+         
+-        lastPrefsFuture = java.util.concurrent.CompletableFuture.runAsync(() -> {
++        lastPrefsFuture = com.svcntrl.SvcntrlMod.runAsync(() -> {
+             try {
+                 Files.createDirectories(dataDir);
+                 try (Writer writer = Files.newBufferedWriter(prefsFile)) {
+@@ -326,7 +326,7 @@ public class ProjectManager {
+ 
+     public void deleteBranchDir(Project project, String branchName) {
+         if (dataDir == null) return;
+-        java.util.concurrent.CompletableFuture.runAsync(() -> {
++        com.svcntrl.SvcntrlMod.runAsync(() -> {
+             try {
+                 Path branchDir = getProjectDir(project).resolve(branchName).normalize();
+                 if (!branchDir.startsWith(dataDir.normalize())) throw new IllegalArgumentException("Path traversal attempt in branch: " + branchName);
+@@ -385,7 +385,7 @@ public class ProjectManager {
+                 }
+             };
+             if (oldFuture == null || oldFuture.isDone()) {
+-                return java.util.concurrent.CompletableFuture.runAsync(saveTask);
++                return com.svcntrl.SvcntrlMod.runAsync(saveTask);
+             } else {
+                 return oldFuture.thenRunAsync(saveTask);
+             }
+diff --git a/src/main/resources/assets/svcntrl/lang/ru_ru.json b/src/main/resources/assets/svcntrl/lang/ru_ru.json
+index 6344be0..6ce91d0 100644
+--- a/src/main/resources/assets/svcntrl/lang/ru_ru.json
++++ b/src/main/resources/assets/svcntrl/lang/ru_ru.json
+@@ -1,111 +1,111 @@
+ {
+-  "svcntrl.msg.you_cannot_break_blocks_while": "You cannot break blocks while previewing. Use /svcntrl preview stop",
+-  "svcntrl.msg.you_don_t_have_access_to_this": "You don't have access to this project.",
+-  "svcntrl.msg.you_cannot_break_blocks_in_sel": "You cannot break blocks in selection mode.",
+-  "svcntrl.msg.cannot_modify_area_a_save_rest": "Cannot modify area: A save/restore operation is in progress.",
+-  "svcntrl.msg.selected_project": "Selected project: ",
+-  "svcntrl.msg.cannot_modify_area_a_preview_i": "Cannot modify area: A preview is active in this project.",
+-  "svcntrl.msg.you_cannot_interact_while_prev": "You cannot interact while previewing. Use /svcntrl preview stop",
+-  "svcntrl.msg.raycast_selection_cancelled_no": "Raycast selection cancelled (no project found).",
+-  "svcntrl.msg.click_to_export": "Click to export",
+-  "svcntrl.msg.project_or_an_overlapping_proj": "Project (or an overlapping project) is locked by another operation.",
+-  "svcntrl.msg.only_the_owner_or_admin_can_un": "Only the owner or admin can untrust players.",
+-  "svcntrl.msg.player_not_found": "Player not found.",
+-  "svcntrl.msg.svcntrl_save_desc_create_a_man": "/svcntrl save [desc] - Create a manual snapshot",
+-  "svcntrl.msg.svcntrl_project_remove_name_fo": "/svcntrl project remove <name> force - Delete a project permanently",
+-  "svcntrl.msg.svcntrl_pos1_pos2_set_position": "/svcntrl pos1 / pos2 - Set positions for project creation",
+-  "svcntrl.msg.no_valid_export_file_pending_f": "No valid export file pending for upload.",
+-  "svcntrl.msg.cross_patch_applied_successful": "Cross patch applied successfully! (Entities fully replaced)",
+-  "svcntrl.msg.branches_for_project": "Branches for project '",
+-  "svcntrl.msg.svcntrl_branch_create_name_nos": "/svcntrl branch create <name> [--nosave] - Create a new branch",
+-  "svcntrl.msg.raycast_selection_mode_enabled": "Raycast selection mode enabled.",
+-  "svcntrl.msg.svcntrl_project_create_name_cr": "/svcntrl project create <name> - Create a project",
+-  "svcntrl.msg.invalid_branch_name_use_only_l": "Invalid branch name. Use only letters, numbers, underscores, and hyphens.",
+-  "svcntrl.msg.preview": " [Preview]",
+-  "svcntrl.msg.failed_to_load_branch_data": "Failed to load branch data.",
+-  "svcntrl.msg.click_to_preview": "Click to preview",
+-  "svcntrl.msg.preview_stopped": "Preview stopped.",
+-  "svcntrl.msg.svcntrl_branch_checkout_name_n": "/svcntrl branch checkout <name> [--nosave] - Switch to a branch",
+-  "svcntrl.msg.click_to_restore": "Click to restore",
+-  "svcntrl.msg.creating_auto_save_before_patc": "Creating auto-save before patch restore...",
+-  "svcntrl.msg.this_command_can_only_be_used": "This command can only be used by players.",
+-  "svcntrl.msg.only_the_project_owner_or_admi": "Only the project owner or admin can remove it.",
+-  "svcntrl.msg.applying_patch_entities_fully": "Applying patch (Entities fully replaced)...",
+-  "svcntrl.msg.active_project_set_to": "Active project set to '",
+-  "svcntrl.msg.not_previewing": "Not previewing.",
+-  "svcntrl.msg.svcntrl_config_reloaded": "Svcntrl config reloaded!",
+-  "svcntrl.msg.creating_auto_save_before_cros": "Creating auto-save before cross patch...",
+-  "svcntrl.msg.branch_not_found": "Branch not found.",
+-  "svcntrl.msg.no_active_project_select_one_o": "No active project. Select one or use /svcntrl tp <name>",
+-  "svcntrl.msg.svcntrl_branch_list_delete_man": "/svcntrl branch list/delete - Manage branches",
+-  "svcntrl.msg.only_the_owner_or_admin_can_tr": "Only the owner or admin can trust players.",
+-  "svcntrl.msg.svcntrl_restore_manual_auto_id": "/svcntrl restore [manual|auto] <id> [--nosave] - Restore to a snapshot",
+-  "svcntrl.msg.project_saved_snapshot_id": "Project saved! Snapshot ID: ",
+-  "svcntrl.msg.svcntrl_export_id_export_snaps": "/svcntrl export <id> - Export snapshot to WorldEdit schematic",
+-  "svcntrl.msg.project_not_found": "Project not found.",
++  "svcntrl.msg.you_cannot_break_blocks_while": "Вы не можете ломать блоки в режиме предпросмотра. Используйте /svcntrl preview stop",
++  "svcntrl.msg.you_don_t_have_access_to_this": "У вас нет доступа к этому проекту.",
++  "svcntrl.msg.you_cannot_break_blocks_in_sel": "Вы не можете ломать блоки в режиме выделения.",
++  "svcntrl.msg.cannot_modify_area_a_save_rest": "Невозможно изменить область: выполняется сохранение/восстановление.",
++  "svcntrl.msg.selected_project": "Выбранный проект: ",
++  "svcntrl.msg.cannot_modify_area_a_preview_i": "Невозможно изменить область: в этом проекте активен предпросмотр.",
++  "svcntrl.msg.you_cannot_interact_while_prev": "Вы не можете взаимодействовать в режиме предпросмотра. Используйте /svcntrl preview stop",
++  "svcntrl.msg.raycast_selection_cancelled_no": "Выделение лучом отменено (проект не найден).",
++  "svcntrl.msg.click_to_export": "Нажмите для экспорта",
++  "svcntrl.msg.project_or_an_overlapping_proj": "Проект (или пересекающийся проект) заблокирован другой операцией.",
++  "svcntrl.msg.only_the_owner_or_admin_can_un": "Только владелец или админ может удалять игроков из доверенных.",
++  "svcntrl.msg.player_not_found": "Игрок не найден.",
++  "svcntrl.msg.svcntrl_save_desc_create_a_man": "/svcntrl save [описание] - Создать ручной снимок",
++  "svcntrl.msg.svcntrl_project_remove_name_fo": "/svcntrl project remove <имя> force - Безвозвратно удалить проект",
++  "svcntrl.msg.svcntrl_pos1_pos2_set_position": "/svcntrl pos1 / pos2 - Установить позиции для создания проекта",
++  "svcntrl.msg.no_valid_export_file_pending_f": "Нет подходящего файла экспорта для загрузки.",
++  "svcntrl.msg.cross_patch_applied_successful": "Кросс-патч успешно применен! (Сущности полностью заменены)",
++  "svcntrl.msg.branches_for_project": "Ветки для проекта '",
++  "svcntrl.msg.svcntrl_branch_create_name_nos": "/svcntrl branch create <имя> [--nosave] - Создать новую ветку",
++  "svcntrl.msg.raycast_selection_mode_enabled": "Режим выделения лучом включен.",
++  "svcntrl.msg.svcntrl_project_create_name_cr": "/svcntrl project create <имя> - Создать проект",
++  "svcntrl.msg.invalid_branch_name_use_only_l": "Недопустимое имя ветки. Используйте только буквы, цифры, подчеркивания и дефисы.",
++  "svcntrl.msg.preview": " [Предпросмотр]",
++  "svcntrl.msg.failed_to_load_branch_data": "Не удалось загрузить данные ветки.",
++  "svcntrl.msg.click_to_preview": "Нажмите для предпросмотра",
++  "svcntrl.msg.preview_stopped": "Предпросмотр остановлен.",
++  "svcntrl.msg.svcntrl_branch_checkout_name_n": "/svcntrl branch checkout <имя> [--nosave] - Переключиться на ветку",
++  "svcntrl.msg.click_to_restore": "Нажмите для восстановления",
++  "svcntrl.msg.creating_auto_save_before_patc": "Создание автосохранения перед восстановлением патча...",
++  "svcntrl.msg.this_command_can_only_be_used": "Эту команду могут использовать только игроки.",
++  "svcntrl.msg.only_the_project_owner_or_admi": "Только владелец проекта или админ может удалить его.",
++  "svcntrl.msg.applying_patch_entities_fully": "Применение патча (сущности полностью заменены)...",
++  "svcntrl.msg.active_project_set_to": "Активный проект изменен на '",
++  "svcntrl.msg.not_previewing": "Предпросмотр не активен.",
++  "svcntrl.msg.svcntrl_config_reloaded": "Конфигурация Svcntrl перезагружена!",
++  "svcntrl.msg.creating_auto_save_before_cros": "Создание автосохранения перед кросс-патчем...",
++  "svcntrl.msg.branch_not_found": "Ветка не найдена.",
++  "svcntrl.msg.no_active_project_select_one_o": "Нет активного проекта. Выберите его или используйте /svcntrl tp <имя>",
++  "svcntrl.msg.svcntrl_branch_list_delete_man": "/svcntrl branch list/delete - Управление ветками",
++  "svcntrl.msg.only_the_owner_or_admin_can_tr": "Только владелец или админ может добавлять игроков в доверенные.",
++  "svcntrl.msg.svcntrl_restore_manual_auto_id": "/svcntrl restore [manual|auto] <id> [--nosave] - Восстановить до снимка",
++  "svcntrl.msg.project_saved_snapshot_id": "Проект сохранен! ID снимка: ",
++  "svcntrl.msg.svcntrl_export_id_export_snaps": "/svcntrl export <id> - Экспортировать снимок в схематику WorldEdit",
++  "svcntrl.msg.project_not_found": "Проект не найден.",
+   "svcntrl.msg.": "'...",
+-  "svcntrl.msg.only_owner_can_delete_branches": "Only owner can delete branches.",
+-  "svcntrl.msg.branch_state_saved": "Branch state saved.",
+-  "svcntrl.msg.snapshot_not_found": "Snapshot not found",
+-  "svcntrl.msg.you_don_t_have_access": "You don't have access.",
+-  "svcntrl.msg.svcntrl_commands": "=== Svcntrl Commands ===",
+-  "svcntrl.msg.cannot_delete_project_an_opera": "Cannot delete project: an operation is in progress.",
+-  "svcntrl.msg.world_for_project_not_found": "World for project not found.",
+-  "svcntrl.msg.export": " [Export]",
+-  "svcntrl.msg.failed_to_apply_patch_snapshot": "Failed to apply patch. Snapshots missing.",
+-  "svcntrl.msg.cannot_delete_current_branch": "Cannot delete current branch.",
+-  "svcntrl.msg.failed_to_restore_snapshot_mis": "Failed to restore. Snapshot missing.",
+-  "svcntrl.msg.no_active_project": "No active project.",
+-  "svcntrl.msg.snapshots_for": "=== Snapshots for ",
+-  "svcntrl.msg.creating_auto_save_before_rest": "Creating auto-save before restore...",
+-  "svcntrl.msg.saving_project": "Saving project '",
+-  "svcntrl.msg.invalid_name_use_only_letters": "Invalid name. Use only letters, numbers, underscores, and hyphens (max 32 chars).",
+-  "svcntrl.msg.you_don_t_have_access_only_the": "You don't have access. Only the owner can delete snapshots.",
+-  "svcntrl.msg.branch_already_exists": "Branch already exists.",
+-  "svcntrl.msg.restore": " [Restore]",
+-  "svcntrl.msg.failed_to_schedule_patch_resto": "Failed to schedule patch restore.",
+-  "svcntrl.msg.failed_to_read_snapshot_file": "Failed to read snapshot file.",
+-  "svcntrl.msg.failed_to_read_snapshots_for_p": "Failed to read snapshots for patch.",
+-  "svcntrl.msg.restore_completed": "Restore Completed!",
+-  "svcntrl.msg.restore_failed_cancelled": "Restore failed/cancelled.",
+-  "svcntrl.msg.restoring_blocks_100_0": "Restoring Blocks: 100.0%",
+-  "svcntrl.msg.restoring_blockentities_100_0": "Restoring BlockEntities: 100.0%",
+-  "svcntrl.msg.patch_restore_only_supports_v2": "Patch restore only supports V2 snapshots.",
+-  "svcntrl.msg.failed_to_schedule_restore": "Failed to schedule restore.",
+-  "svcntrl.msg.error_exporting_snapshot_check": "Error exporting snapshot. Check server logs.",
+-  "svcntrl.msg.error_exporting_diff_check_ser": "Error exporting diff. Check server logs.",
+-  "svcntrl.msg.click_to_upload_to_tmpfiles_or": "Click to upload to tmpfiles.org",
+-  "svcntrl.msg.failed_to_upload_unrecognized": "Failed to upload: Unrecognized response format.",
+-  "svcntrl.msg.error_exporting_full_project_c": "Error exporting full project. Check server logs.",
+-  "svcntrl.msg.uploading_diff_schematic_pleas": "Uploading diff schematic, please wait...",
+-  "svcntrl.msg.one_or_both_snapshots_not_foun": "One or both snapshots not found.",
+-  "svcntrl.msg.project_directory_not_found": "Project directory not found.",
+-  "svcntrl.msg.diff_export_currently_only_sup": "Diff export currently only supports V2 snapshots.",
+-  "svcntrl.msg.do_you_want_to_upload_this_fil": "Do you want to upload this file to tmpfiles.org for easy sharing? (Expires in 60s) ",
+-  "svcntrl.msg.failed_to_create_zip_check_log": "Failed to create zip. Check logs.",
+-  "svcntrl.msg.security_notice_this_link_is_p": "Security Notice: This link is public and expires in 60 minutes.",
+-  "svcntrl.msg.calculating_diff_and_generatin": "Calculating diff and generating schematic...",
+-  "svcntrl.msg.yes_upload": "[YES, UPLOAD]",
+-  "svcntrl.msg.converting_v1_blocks_100_0": "Converting V1 Blocks: 100.0%",
+-  "svcntrl.msg.packing_blocks_100_0": "Packing Blocks: 100.0%",
+-  "svcntrl.msg.export_uploaded_download_link": "Export uploaded! Download link: ",
+-  "svcntrl.msg.converting_and_packing_full_pr": "Converting and packing full project archive, please wait...",
+-  "svcntrl.msg.uploading_schematic_to_public": "Uploading schematic to public host (tmpfiles.org), please wait...",
+-  "svcntrl.msg.download": "[Download]",
+-  "svcntrl.msg.project_creation_timed_out": "Project creation timed out.",
+-  "svcntrl.msg.warning_this_project_overlaps": "Warning: This project overlaps with another existing project. Operations on this project may be temporarily blocked if the other project is being saved or restored.",
+-  "svcntrl.msg.failed_to_create_project_name": "Failed to create project. Name already exists.",
+-  "svcntrl.msg.you_have_1_minute_before_this": "(You have 1 minute before this cancels).",
+-  "svcntrl.msg.a_project_with_this_name_alrea": "A project with this name already exists.",
+-  "svcntrl.msg.left_right_click_blocks_to_set": "Left/Right-click blocks to set Pos1/Pos2 with the wand item.\\n",
+-  "svcntrl.msg.loading_snapshot_for_preview": "Loading snapshot for preview...",
+-  "svcntrl.msg.clearing_preview_100_0": "Clearing Preview: 100.0%",
+-  "svcntrl.msg.loading_preview_100_0": "Loading Preview: 100.0%",
+-  "svcntrl.msg.failed_to_load_snapshot_for_pr": "Failed to load snapshot for preview.",
+-  "svcntrl.msg.saving_100_0": "Saving: 100.0%",
+-  "svcntrl.msg.save_failed_cancelled": "Save failed/cancelled.",
+-  "svcntrl.msg.looking_at": "Looking at: ",
+-  "svcntrl.msg.none": "None",
+-  "svcntrl.msg.click_to_select": " (Click to select)",
+-  "svcntrl.msg.you_are_in_preview_mode_type_s": "[!] You are in preview mode. Type /svcntrl preview stop"
+-}
+\ No newline at end of file
++  "svcntrl.msg.only_owner_can_delete_branches": "Только владелец может удалять ветки.",
++  "svcntrl.msg.branch_state_saved": "Состояние ветки сохранено.",
++  "svcntrl.msg.snapshot_not_found": "Снимок не найден",
++  "svcntrl.msg.you_don_t_have_access": "У вас нет доступа.",
++  "svcntrl.msg.svcntrl_commands": "=== Команды Svcntrl ===",
++  "svcntrl.msg.cannot_delete_project_an_opera": "Невозможно удалить проект: выполняется операция.",
++  "svcntrl.msg.world_for_project_not_found": "Мир для проекта не найден.",
++  "svcntrl.msg.export": " [Экспорт]",
++  "svcntrl.msg.failed_to_apply_patch_snapshot": "Не удалось применить патч. Снимки отсутствуют.",
++  "svcntrl.msg.cannot_delete_current_branch": "Невозможно удалить текущую ветку.",
++  "svcntrl.msg.failed_to_restore_snapshot_mis": "Не удалось восстановить. Снимок отсутствует.",
++  "svcntrl.msg.no_active_project": "Нет активного проекта.",
++  "svcntrl.msg.snapshots_for": "=== Снимки для ",
++  "svcntrl.msg.creating_auto_save_before_rest": "Создание автосохранения перед восстановлением...",
++  "svcntrl.msg.saving_project": "Сохранение проекта '",
++  "svcntrl.msg.invalid_name_use_only_letters": "Недопустимое имя. Используйте только буквы, цифры, подчеркивания и дефисы (макс 32 симв.).",
++  "svcntrl.msg.you_don_t_have_access_only_the": "У вас нет доступа. Только владелец может удалять снимки.",
++  "svcntrl.msg.branch_already_exists": "Ветка уже существует.",
++  "svcntrl.msg.restore": " [Восстановить]",
++  "svcntrl.msg.failed_to_schedule_patch_resto": "Не удалось запланировать восстановление патча.",
++  "svcntrl.msg.failed_to_read_snapshot_file": "Не удалось прочитать файл снимка.",
++  "svcntrl.msg.failed_to_read_snapshots_for_p": "Не удалось прочитать снимки для патча.",
++  "svcntrl.msg.restore_completed": "Восстановление завершено!",
++  "svcntrl.msg.restore_failed_cancelled": "Восстановление не удалось/отменено.",
++  "svcntrl.msg.restoring_blocks_100_0": "Восстановление блоков: 100.0%",
++  "svcntrl.msg.restoring_blockentities_100_0": "Восстановление тайл-энтити: 100.0%",
++  "svcntrl.msg.patch_restore_only_supports_v2": "Восстановление патчей поддерживает только снимки V2.",
++  "svcntrl.msg.failed_to_schedule_restore": "Не удалось запланировать восстановление.",
++  "svcntrl.msg.error_exporting_snapshot_check": "Ошибка экспорта снимка. Проверьте логи сервера.",
++  "svcntrl.msg.error_exporting_diff_check_ser": "Ошибка экспорта diff. Проверьте логи сервера.",
++  "svcntrl.msg.click_to_upload_to_tmpfiles_or": "Нажмите для загрузки на tmpfiles.org",
++  "svcntrl.msg.failed_to_upload_unrecognized": "Ошибка загрузки: Неизвестный формат ответа.",
++  "svcntrl.msg.error_exporting_full_project_c": "Ошибка экспорта всего проекта. Проверьте логи сервера.",
++  "svcntrl.msg.uploading_diff_schematic_pleas": "Загрузка diff схематики, пожалуйста подождите...",
++  "svcntrl.msg.one_or_both_snapshots_not_foun": "Один или оба снимка не найдены.",
++  "svcntrl.msg.project_directory_not_found": "Директория проекта не найдена.",
++  "svcntrl.msg.diff_export_currently_only_sup": "Экспорт diff пока поддерживает только снимки V2.",
++  "svcntrl.msg.do_you_want_to_upload_this_fil": "Хотите ли вы загрузить этот файл на tmpfiles.org для легкого обмена? (Действителен 60с) ",
++  "svcntrl.msg.failed_to_create_zip_check_log": "Не удалось создать zip. Проверьте логи.",
++  "svcntrl.msg.security_notice_this_link_is_p": "Уведомление безопасности: Эта ссылка публична и истечет через 60 минут.",
++  "svcntrl.msg.calculating_diff_and_generatin": "Вычисление разницы и создание схематики...",
++  "svcntrl.msg.yes_upload": "[ДА, ЗАГРУЗИТЬ]",
++  "svcntrl.msg.converting_v1_blocks_100_0": "Конвертация блоков V1: 100.0%",
++  "svcntrl.msg.packing_blocks_100_0": "Упаковка блоков: 100.0%",
++  "svcntrl.msg.export_uploaded_download_link": "Экспорт загружен! Ссылка для скачивания: ",
++  "svcntrl.msg.converting_and_packing_full_pr": "Конвертация и упаковка полного архива проекта, пожалуйста подождите...",
++  "svcntrl.msg.uploading_schematic_to_public": "Загрузка схематики на публичный хост (tmpfiles.org), пожалуйста подождите...",
++  "svcntrl.msg.download": "[Скачать]",
++  "svcntrl.msg.project_creation_timed_out": "Время создания проекта истекло.",
++  "svcntrl.msg.warning_this_project_overlaps": "Предупреждение: Этот проект пересекается с другим существующим проектом. Операции над этим проектом могут быть временно заблокированы, если другой проект сохраняется или восстанавливается.",
++  "svcntrl.msg.failed_to_create_project_name": "Не удалось создать проект. Имя уже существует.",
++  "svcntrl.msg.you_have_1_minute_before_this": "(У вас есть 1 минута до отмены).",
++  "svcntrl.msg.a_project_with_this_name_alrea": "Проект с таким именем уже существует.",
++  "svcntrl.msg.left_right_click_blocks_to_set": "Левый/Правый клик по блокам, чтобы установить Pos1/Pos2 с помощью инструмента.\\n",
++  "svcntrl.msg.loading_snapshot_for_preview": "Загрузка снимка для предпросмотра...",
++  "svcntrl.msg.clearing_preview_100_0": "Очистка предпросмотра: 100.0%",
++  "svcntrl.msg.loading_preview_100_0": "Загрузка предпросмотра: 100.0%",
++  "svcntrl.msg.failed_to_load_snapshot_for_pr": "Не удалось загрузить снимок для предпросмотра.",
++  "svcntrl.msg.saving_100_0": "Сохранение: 100.0%",
++  "svcntrl.msg.save_failed_cancelled": "Сохранение не удалось/отменено.",
++  "svcntrl.msg.looking_at": "Смотрит на: ",
++  "svcntrl.msg.none": "Нет",
++  "svcntrl.msg.click_to_select": " (Нажмите для выбора)",
++  "svcntrl.msg.you_are_in_preview_mode_type_s": "[!] Вы в режиме предпросмотра. Введите /svcntrl preview stop"
++}
+diff --git a/src/main/resources/fabric.mod.json b/src/main/resources/fabric.mod.json
+index c4884cb..d5323de 100644
+--- a/src/main/resources/fabric.mod.json
++++ b/src/main/resources/fabric.mod.json
+@@ -9,7 +9,7 @@
+   ],
+   "contact": {},
+   "license": "MIT",
+-  "environment": "*",
++  "environment": "server",
+   "entrypoints": {
+     "main": [
+       "com.svcntrl.SvcntrlMod"
