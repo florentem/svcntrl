@@ -123,17 +123,37 @@ public class SvcntrlCommands {
                         .executes(ctx -> executeSave(ctx.getSource(), StringArgumentType.getString(ctx, "description")))))
 
                 .then(literal("log").requires(requirePerm("svcntrl.command.log"))
-                    .executes(ctx -> executeLog(ctx.getSource(), "manual", 1))
+                    .executes(ctx -> executeLog(ctx.getSource(), "manual", 1, null))
                     .then(argument("page", IntegerArgumentType.integer(1))
-                        .executes(ctx -> executeLog(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "page"))))
+                        .executes(ctx -> executeLog(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "page"), null))
+                        .then(argument("filter", StringArgumentType.string())
+                            .executes(ctx -> executeLog(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "page"), StringArgumentType.getString(ctx, "filter"))))
+                    )
+                    .then(argument("filter", StringArgumentType.string())
+                        .executes(ctx -> executeLog(ctx.getSource(), "manual", 1, StringArgumentType.getString(ctx, "filter")))
+                    )
                     .then(literal("auto")
-                        .executes(ctx -> executeLog(ctx.getSource(), "auto", 1))
+                        .executes(ctx -> executeLog(ctx.getSource(), "auto", 1, null))
                         .then(argument("page", IntegerArgumentType.integer(1))
-                            .executes(ctx -> executeLog(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "page")))))
+                            .executes(ctx -> executeLog(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "page"), null))
+                            .then(argument("filter", StringArgumentType.string())
+                                .executes(ctx -> executeLog(ctx.getSource(), "auto", IntegerArgumentType.getInteger(ctx, "page"), StringArgumentType.getString(ctx, "filter"))))
+                        )
+                        .then(argument("filter", StringArgumentType.string())
+                            .executes(ctx -> executeLog(ctx.getSource(), "auto", 1, StringArgumentType.getString(ctx, "filter")))
+                        )
+                    )
                     .then(literal("manual")
-                        .executes(ctx -> executeLog(ctx.getSource(), "manual", 1))
+                        .executes(ctx -> executeLog(ctx.getSource(), "manual", 1, null))
                         .then(argument("page", IntegerArgumentType.integer(1))
-                            .executes(ctx -> executeLog(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "page")))))
+                            .executes(ctx -> executeLog(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "page"), null))
+                            .then(argument("filter", StringArgumentType.string())
+                                .executes(ctx -> executeLog(ctx.getSource(), "manual", IntegerArgumentType.getInteger(ctx, "page"), StringArgumentType.getString(ctx, "filter"))))
+                        )
+                        .then(argument("filter", StringArgumentType.string())
+                            .executes(ctx -> executeLog(ctx.getSource(), "manual", 1, StringArgumentType.getString(ctx, "filter")))
+                        )
+                    )
                 )
                 
                 .then(literal("deletesave").requires(requirePerm("svcntrl.command.snapshot.delete"))
@@ -996,7 +1016,7 @@ public class SvcntrlCommands {
     }
 
 
-    private static int executeLog(ServerCommandSource source, String category, int page) {
+    private static int executeLog(ServerCommandSource source, String category, int page, String filter) {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
 
@@ -1005,10 +1025,29 @@ public class SvcntrlCommands {
         if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
 
         Project.Branch branch = project.getBranch(project.getCurrentBranchName());
-        List<Project.SnapshotMeta> snapshots = "auto".equalsIgnoreCase(category) ? branch.getAutoSnapshots() : branch.getManualSnapshots();
+        List<Project.SnapshotMeta> rawSnapshots = "auto".equalsIgnoreCase(category) ? branch.getAutoSnapshots() : branch.getManualSnapshots();
+
+        List<Project.SnapshotMeta> snapshots = rawSnapshots;
+        if (filter != null && !filter.trim().isEmpty()) {
+            String f = filter.toLowerCase();
+            String[] tokens = f.split("\\s+");
+            snapshots = rawSnapshots.stream().filter(meta -> {
+                String desc = (meta.getDescription() == null ? "" : meta.getDescription()).toLowerCase();
+                String author = (meta.getAuthorName() == null ? "" : meta.getAuthorName()).toLowerCase();
+                String combined = desc + " " + author;
+                for (String t : tokens) {
+                    if (!combined.contains(t)) return false;
+                }
+                return true;
+            }).collect(java.util.stream.Collectors.toList());
+        }
 
         if (snapshots.isEmpty()) {
-            source.sendFeedback(() -> Text.literal("No " + category + " snapshots found for branch " + branch.getName() + "."), false);
+            if (filter != null) {
+                source.sendFeedback(() -> Text.literal("No " + category + " snapshots match the filter '" + filter + "'."), false);
+            } else {
+                source.sendFeedback(() -> Text.literal("No " + category + " snapshots found for branch " + branch.getName() + "."), false);
+            }
             return 1;
         }
 
@@ -1020,7 +1059,7 @@ public class SvcntrlCommands {
         final int finalPage = page;
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.snapshots_for")
                 .append(Text.literal(project.getName()).formatted(Formatting.AQUA))
-                .append(Text.literal(" (" + branch.getName() + ") === Page " + finalPage + "/" + totalPages).formatted(Formatting.GRAY)), false);
+                .append(Text.literal(" (" + branch.getName() + ")" + (filter != null ? " [Filter: " + filter + "]" : "") + " === Page " + finalPage + "/" + totalPages).formatted(Formatting.GRAY)), false);
 
         int startIndex = snapshots.size() - 1 - (page - 1) * pageSize;
         int endIndex = Math.max(0, startIndex - pageSize + 1);
