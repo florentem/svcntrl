@@ -156,8 +156,10 @@ public class ProjectManager {
             SvcntrlMod.LOGGER.error("[svcntrl] Failed to create data directory", e);
             return;
         }
-
         projects.clear();
+        activeProjects.clear();
+        lockedProjects.clear();
+        saveTasks.clear();
         
         try (java.util.stream.Stream<Path> stream = Files.list(dataDir)) {
             stream.filter(Files::isDirectory).forEach(projectDir -> {

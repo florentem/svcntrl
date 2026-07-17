@@ -50,6 +50,7 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
         // Save project data when server stops
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             ProjectManager.getInstance().saveProjects();
+            TaskScheduler.getInstance().clear();
             LOGGER.info("[svcntrl] Project data saved.");
         });
 
@@ -64,6 +65,7 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             PendingCreateManager.getInstance().removePlayer(handler.player.getUuid());
             ProjectManager.getInstance().setActiveProject(handler.player.getUuid(), null);
+            UXManager.getInstance().removePlayer(handler.player.getUuid());
             if (PreviewManager.getInstance().hasPreview(handler.player.getUuid())) {
                 PreviewManager.getInstance().stopPreview(handler.player);
             }
@@ -71,6 +73,7 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
 
         // Block all interactions if player is in preview mode or setting positions
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
+            if (world.isClient()) return true;
             if (UXManager.getInstance().isRaycasting(player.getUuid())) {
                 player.sendMessage(Text.literal("You cannot break blocks in selection mode.").formatted(Formatting.RED), true);
                 return false;
@@ -92,11 +95,13 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
         });
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
+            if (world.isClient()) return ActionResult.PASS;
             if (handleRaycastSelection(player)) return ActionResult.FAIL;
             return ActionResult.PASS;
         });
 
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+            if (world.isClient()) return ActionResult.PASS;
             if (handleRaycastSelection(player)) return ActionResult.FAIL;
 
             if (!player.isSpectator() && hand == net.minecraft.util.Hand.MAIN_HAND && hitResult instanceof net.minecraft.util.hit.BlockHitResult blockHit) {
@@ -124,6 +129,7 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
         });
 
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
+            if (world.isClient()) return ActionResult.PASS;
             if (handleRaycastSelection(player)) return ActionResult.FAIL;
 
             if (PreviewManager.getInstance().hasPreview(player.getUuid())) {
@@ -147,6 +153,7 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
     }
 
     private boolean handleRaycastSelection(net.minecraft.entity.player.PlayerEntity player) {
+        if (player.getWorld().isClient()) return false;
         if (UXManager.getInstance().isRaycasting(player.getUuid())) {
             com.svcntrl.data.Project project = UXManager.getInstance().getProjectLookingAt((net.minecraft.server.network.ServerPlayerEntity) player);
             if (project != null) {

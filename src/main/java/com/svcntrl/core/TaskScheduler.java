@@ -25,6 +25,12 @@ public class TaskScheduler {
         pendingAdd.add(task);
     }
 
+    public void clear() {
+        tasks.clear();
+        pendingAdd.clear();
+        nextTaskIndex = 0;
+    }
+
     public boolean hasActiveTasks() {
         return !tasks.isEmpty() || !pendingAdd.isEmpty();
     }

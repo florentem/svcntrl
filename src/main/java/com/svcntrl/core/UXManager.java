@@ -49,6 +49,11 @@ public class UXManager {
         else raycastPlayers.remove(uuid);
     }
 
+    public void removePlayer(UUID uuid) {
+        outlinePlayers.remove(uuid);
+        raycastPlayers.remove(uuid);
+    }
+
     public boolean isRaycasting(UUID uuid) {
         return raycastPlayers.contains(uuid);
     }
