@@ -38,7 +38,7 @@
   "svcntrl.msg.svcntrl_branch_list_delete_man": "/svcntrl branch list/delete - Управление ветками",
   "svcntrl.msg.svcntrl_restore_manual_auto_id": "/svcntrl restore [manual|auto] <id> [--nosave] - Восстановить до снимка",
   "svcntrl.msg.project_saved_snapshot_id": "Проект сохранен! ID снимка: ",
-  "svcntrl.msg.svcntrl_export_id_export_snaps": "/svcntrl export <id> - Экспортировать снимок в схематику WorldEdit",
+  "svcntrl.msg.svcntrl_export_id_export_snaps": "/svcntrl export <id> - Экспортировать снимок в схематику Litematica",
   "svcntrl.msg.project_not_found": "Проект не найден.",
   "svcntrl.msg.branch_state_saved": "Состояние ветки сохранено.",
   "svcntrl.msg.snapshot_not_found": "Снапшот %s не найден в ветке %s",
