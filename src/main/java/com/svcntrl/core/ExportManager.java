@@ -33,6 +33,9 @@ public class ExportManager {
     }
 
     private static final Map<java.util.UUID, PendingUpload> pendingUploads = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.net.http.HttpClient HTTP_CLIENT = java.net.http.HttpClient.newBuilder()
+            .connectTimeout(java.time.Duration.ofSeconds(30))
+            .build();
 
     public static void tick() {
         long now = System.currentTimeMillis();
@@ -40,7 +43,8 @@ public class ExportManager {
             if (now > entry.getValue().expiryTime) {
                 try {
                     Files.deleteIfExists(entry.getValue().path);
-                    String base = entry.getValue().path.getFileName().toString().replace(".zip", "");
+                    String fName = entry.getValue().path.getFileName().toString();
+                    String base = fName.endsWith(".zip") ? fName.substring(0, fName.length() - 4) : fName;
                     Files.deleteIfExists(entry.getValue().path.getParent().resolve(base));
                 } catch (Exception ignored) {}
                 return true;
@@ -205,20 +209,25 @@ public class ExportManager {
                                     String relPath = projectDir.relativize(path).toString().replace("\\", "/");
                                     if (path.toString().endsWith(".nbt")) {
                                         NbtCompound snapRoot = net.minecraft.nbt.NbtIo.readCompressed(path, net.minecraft.nbt.NbtSizeTracker.of(512L * 1024L * 1024L));
-                                        String[] parts = path.getFileName().toString().replace(".nbt", "").split("_");
-                                        String cat = parts.length > 0 ? parts[0] : "snapshot";
+                                        String[] pathParts = relPath.split("/");
+                                        String cat = pathParts.length > 1 ? pathParts[pathParts.length - 2] : "snapshot";
                                         int sid = 0;
-                                        if (parts.length > 1) {
+                                        String fileNameOnly = path.getFileName().toString();
+                                        if (fileNameOnly.startsWith("snapshot_") && fileNameOnly.endsWith(".nbt")) {
                                             try {
-                                                sid = Integer.parseInt(parts[1]);
+                                                sid = Integer.parseInt(fileNameOnly.substring(9, fileNameOnly.length() - 4));
                                             } catch (NumberFormatException ignored) {}
                                         }
                                         NbtCompound lite = convertToLitematic(snapRoot, project, cat, sid, player);
                                         
                                         zos.putNextEntry(new ZipEntry(relPath.replace(".nbt", ".litematic")));
-                                        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-                                        net.minecraft.nbt.NbtIo.writeCompressed(lite, baos);
-                                        zos.write(baos.toByteArray());
+                                        java.io.OutputStream unclosableZos = new java.io.FilterOutputStream(zos) {
+                                            @Override
+                                            public void close() throws java.io.IOException {
+                                                // Prevent NbtIo from closing the ZipOutputStream
+                                            }
+                                        };
+                                        net.minecraft.nbt.NbtIo.writeCompressed(lite, unclosableZos);
                                         zos.closeEntry();
                                     } else {
                                         zos.putNextEntry(new ZipEntry(relPath));
@@ -231,9 +240,13 @@ public class ExportManager {
                             });
                 }
 
-                com.svcntrl.SvcntrlMod.runAsync(() -> {
-                    uploadToTmpfiles(zipPath, player);
-                });
+                if (com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport && player != null && player.getServer().isDedicated()) {
+                    com.svcntrl.SvcntrlMod.runAsync(() -> {
+                        uploadToTmpfiles(zipPath, player);
+                    });
+                } else if (player != null) {
+                    player.sendMessage(Text.literal("Export saved: " + fileName).formatted(Formatting.GREEN), false);
+                }
 
             } catch (Throwable e) {
                 SvcntrlMod.LOGGER.error("Failed to export full project", e);
@@ -737,10 +750,6 @@ public class ExportManager {
     public static void doActualUpload(Path zipPath, net.minecraft.server.network.ServerPlayerEntity player) {
         Path tempFile = null;
         try {
-            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
-                    .connectTimeout(java.time.Duration.ofSeconds(30))
-                    .build();
-            
             String boundary = "===" + System.currentTimeMillis() + "===";
             
             // Write the entire multipart request to a temporary file to avoid OutOfMemoryError on large exports
@@ -772,8 +781,8 @@ public class ExportManager {
                     .timeout(java.time.Duration.ofMinutes(5)) // allow up to 5 mins for upload
                     .POST(java.net.http.HttpRequest.BodyPublishers.ofFile(tempFile))
                     .build();
-            
-            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+
+            java.net.http.HttpResponse<String> response = HTTP_CLIENT.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
             
             if (response.statusCode() == 200 || response.statusCode() == 201) {
                 String output = response.body();

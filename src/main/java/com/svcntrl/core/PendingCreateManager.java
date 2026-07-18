@@ -86,13 +86,12 @@ public class PendingCreateManager {
             return false;
         }
 
-        if (state.pos1 != null && !player.getWorld().getRegistryKey().getValue().toString().equals(state.dimension)) {
-            player.sendMessage(Text.literal("Pos2 must be in the same dimension as Pos1 (" + state.dimension + ")!").formatted(Formatting.RED), false);
-            return false;
+        if (state.dimension != null && !state.dimension.equals(player.getWorld().getRegistryKey().getValue().toString())) {
+            state.pos1 = null; // Reset pos1 if dimension changed
         }
-
         state.pos2 = pos;
-        player.sendMessage(Text.literal("Pos2 set to " + pos.toShortString()).formatted(Formatting.GREEN), false);
+        state.dimension = player.getWorld().getRegistryKey().getValue().toString();
+        player.sendMessage(Text.literal("Pos2 set to " + pos.toShortString() + " in " + state.dimension).formatted(Formatting.GREEN), false);
         checkCompletion(player, state);
         return true;
     }

@@ -44,12 +44,19 @@ public class AreaSerializer {
 
     public static void saveAreaAsync(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, Project project, String branchName, String category, int snapshotId, Runnable onSuccess, java.util.function.Consumer<String> onError) {
         ProjectManager.getInstance().setProjectLocked(project, true);
-        try {
-            TaskScheduler.getInstance().schedule(new SaveTask(player, world, project, branchName, category, snapshotId, onSuccess, onError));
-        } catch (Throwable t) {
-            ProjectManager.getInstance().setProjectLocked(project, false);
-            if (onError != null) onError.accept("Internal error during save task initialization: " + t.getMessage());
-        }
+        com.svcntrl.SvcntrlMod.runAsync(() -> {
+            try {
+                SaveTask task = new SaveTask(player, world, project, branchName, category, snapshotId, onSuccess, onError);
+                world.getServer().execute(() -> {
+                    TaskScheduler.getInstance().schedule(task);
+                });
+            } catch (Throwable t) {
+                world.getServer().execute(() -> {
+                    ProjectManager.getInstance().setProjectLocked(project, false);
+                    if (onError != null) onError.accept("Internal error during save task initialization: " + t.getMessage());
+                });
+            }
+        });
     }
 
     /**
@@ -62,7 +69,7 @@ public class AreaSerializer {
      * 3. Restore block entity data for the placed blocks.
      * 4. Spawn entities from the snapshot.
      */
-    public static boolean restoreArea(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, Project project, String branchName, String category, int snapshotId, boolean excludeIntersections) {
+    public static boolean restoreArea(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, Project project, String branchName, String category, int snapshotId, boolean excludeIntersections, Runnable onComplete, Runnable onFail) {
         Path filePath = ProjectManager.getInstance().getSnapshotPath(project, branchName, category, snapshotId);
         if (!Files.exists(filePath)) {
             SvcntrlMod.LOGGER.error("[svcntrl] Snapshot file not found: {}", filePath);
@@ -77,32 +84,28 @@ public class AreaSerializer {
                     try {
                         BlockPos min = project.getMin();
                         NbtList entities = root.getListOrEmpty("Entities");
-                        TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, root, entities, project).setExcludeIntersections(excludeIntersections));
+                        TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, root, entities, project, onComplete, onFail).setExcludeIntersections(excludeIntersections));
                         SvcntrlMod.LOGGER.info("[svcntrl] Scheduled restore task for project '{}' (snapshot {} {})", project.getName(), snapshotId, category);
                     } catch (Throwable t) {
                         SvcntrlMod.LOGGER.error("[svcntrl] Failed to schedule restore task", t);
                         ProjectManager.getInstance().setProjectLocked(project, false);
                         if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_schedule_restore").formatted(net.minecraft.util.Formatting.RED));
+                        if (onFail != null) onFail.run();
                     }
                 });
             } catch (Throwable e) {
-                // 1.2: Ensure unlock on any error path, including those not caught below
-                try {
-                    SvcntrlMod.LOGGER.error("[svcntrl] Failed to read snapshot file: {}", filePath, e);
-                    ProjectManager.getInstance().setProjectLocked(project, false);
-                    if (player != null && !player.isDisconnected()) {
-                        player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_read_snapshot_file").formatted(net.minecraft.util.Formatting.RED));
-                    }
-                } finally {
-                    // Belt-and-suspenders: guarantee unlock even if the catch block itself throws
-                    ProjectManager.getInstance().setProjectLocked(project, false);
+                SvcntrlMod.LOGGER.error("[svcntrl] Failed to read snapshot file: {}", filePath, e);
+                ProjectManager.getInstance().setProjectLocked(project, false);
+                if (player != null && !player.isDisconnected()) {
+                    player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_read_snapshot_file").formatted(net.minecraft.util.Formatting.RED));
                 }
+                if (onFail != null) onFail.run();
             }
         });
         return true;
     }
 
-    public static boolean restorePatchArea(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, Project project, String targetBranch, String targetCategory, int targetId, String baseBranch, String baseCategory, int baseId, boolean excludeIntersections) {
+    public static boolean restorePatchArea(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, Project project, String targetBranch, String targetCategory, int targetId, String baseBranch, String baseCategory, int baseId, boolean excludeIntersections, Runnable onComplete, Runnable onFail) {
         Path targetPath = ProjectManager.getInstance().getSnapshotPath(project, targetBranch, targetCategory, targetId);
         Path basePath = ProjectManager.getInstance().getSnapshotPath(project, baseBranch, baseCategory, baseId);
 
@@ -226,18 +229,20 @@ public class AreaSerializer {
                 world.getServer().execute(() -> {
                     try {
                         NbtList emptyEntities = new NbtList();
-                        TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, targetRoot, emptyEntities, project, patchMask, entitiesToSpawn, entitiesToRemove).setExcludeIntersections(excludeIntersections));
+                        TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, targetRoot, emptyEntities, project, patchMask, entitiesToSpawn, entitiesToRemove, tPalette, onComplete, onFail).setExcludeIntersections(excludeIntersections));
                         SvcntrlMod.LOGGER.info("[svcntrl] Scheduled patch task for project '{}' (target {} vs base {})", project.getName(), targetId, baseId);
                     } catch (Throwable t) {
                         SvcntrlMod.LOGGER.error("[svcntrl] Failed to schedule patch task", t);
                         ProjectManager.getInstance().setProjectLocked(project, false);
                         if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_schedule_patch_resto").formatted(net.minecraft.util.Formatting.RED));
+                        if (onFail != null) onFail.run();
                     }
                 });
             } catch (Throwable e) {
                 SvcntrlMod.LOGGER.error("[svcntrl] Failed to read patch files", e);
                 ProjectManager.getInstance().setProjectLocked(project, false);
                 if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_read_snapshots_for_p").formatted(net.minecraft.util.Formatting.RED));
+                if (onFail != null) onFail.run();
             }
         });
         return true;
@@ -271,11 +276,14 @@ public class AreaSerializer {
         private final BlockPos.Mutable mutable = new BlockPos.Mutable();
         private long lastMessageTime = 0;
 
-        public RestoreTask(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, BlockPos min, NbtCompound root, NbtList entities, Project project) {
-            this(player, world, min, root, entities, project, null, null, null);
+        private final Runnable onComplete;
+        private final Runnable onFail;
+
+        public RestoreTask(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, BlockPos min, NbtCompound root, NbtList entities, Project project, Runnable onComplete, Runnable onFail) {
+            this(player, world, min, root, entities, project, null, null, null, null, onComplete, onFail);
         }
 
-        public RestoreTask(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, BlockPos min, NbtCompound root, NbtList entities, Project project, boolean[] patchMask, NbtList patchEntities, NbtList entitiesToRemove) {
+        public RestoreTask(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, BlockPos min, NbtCompound root, NbtList entities, Project project, boolean[] patchMask, NbtList patchEntities, NbtList entitiesToRemove, BlockState[] preParsedPalette, Runnable onComplete, Runnable onFail) {
             this.player = player;
             this.world = world;
             this.min = min;
@@ -284,6 +292,8 @@ public class AreaSerializer {
             this.patchMask = patchMask;
             this.patchEntities = patchEntities;
             this.entitiesToRemove = entitiesToRemove;
+            this.onComplete = onComplete;
+            this.onFail = onFail;
             
             this.phase = -1; // Always clear entities so removed entities are actually removed
             
@@ -296,17 +306,21 @@ public class AreaSerializer {
                 this.height = root.getInt("MaxY", 0) - root.getInt("MinY", 0) + 1;
                 this.length = root.getInt("MaxZ", 0) - root.getInt("MinZ", 0) + 1;
                 
-                NbtList pList = root.getListOrEmpty("Palette");
-                this.palette = new BlockState[pList.size()];
-                for (int i = 0; i < pList.size(); i++) {
-                    NbtCompound pEntry = pList.getCompoundOrEmpty(i);
-                    String blockIdStr = pEntry.getString("BlockId", "minecraft:air");
-                    Block block = Registries.BLOCK.get(Identifier.of(blockIdStr));
-                    BlockState state = block.getDefaultState();
-                    if (pEntry.contains("Properties")) {
-                        state = com.svcntrl.util.BlockUtils.applyProperties(state, pEntry.getCompoundOrEmpty("Properties"));
+                if (preParsedPalette != null) {
+                    this.palette = preParsedPalette;
+                } else {
+                    NbtList pList = root.getListOrEmpty("Palette");
+                    this.palette = new BlockState[pList.size()];
+                    for (int i = 0; i < pList.size(); i++) {
+                        NbtCompound pEntry = pList.getCompoundOrEmpty(i);
+                        String blockIdStr = pEntry.getString("BlockId", "minecraft:air");
+                        Block block = Registries.BLOCK.get(Identifier.of(blockIdStr));
+                        BlockState state = block.getDefaultState();
+                        if (pEntry.contains("Properties")) {
+                            state = com.svcntrl.util.BlockUtils.applyProperties(state, pEntry.getCompoundOrEmpty("Properties"));
+                        }
+                        this.palette[i] = state;
                     }
-                    this.palette[i] = state;
                 }
             } else {
                 this.blocks = root.getListOrEmpty("Blocks");
@@ -679,6 +693,7 @@ public class AreaSerializer {
                     SvcntrlMod.LOGGER.info("[svcntrl] Restore task for project '{}' completed.", project.getName());
                     if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.restore_completed").formatted(net.minecraft.util.Formatting.GOLD), true);
                     ProjectManager.getInstance().setProjectLocked(project, false);
+                    if (onComplete != null) onComplete.run();
                     return true;
                 }
             }
@@ -692,6 +707,7 @@ public class AreaSerializer {
             if (player != null && !player.isDisconnected()) {
                 player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.restore_failed_cancelled").formatted(net.minecraft.util.Formatting.RED), false);
             }
+            if (onFail != null) onFail.run();
         }
     }
 

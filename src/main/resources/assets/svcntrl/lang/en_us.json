@@ -60,8 +60,12 @@
   "svcntrl.msg.saving_project": "Saving project '",
   "svcntrl.msg.invalid_name_use_only_letters": "Invalid name. Use only letters, numbers, underscores, and hyphens (max 32 chars).",
 
+  "svcntrl.msg.project_was_permanently_deleted": "Project '%s' was permanently deleted.",
+  "svcntrl.msg.branch_deleted": "Branch '%s' deleted.",
+  "svcntrl.msg.snapshot_deleted": "Snapshot %s (%s) deleted.",
   "svcntrl.msg.branch_already_exists": "Branch already exists.",
   "svcntrl.msg.restore": " [Restore]",
+  "svcntrl.msg.warning_restore_immediate": "Warning: restore is immediate, but protected by auto-save.",
   "svcntrl.msg.failed_to_schedule_patch_resto": "Failed to schedule patch restore.",
   "svcntrl.msg.failed_to_read_snapshot_file": "Failed to read snapshot file.",
   "svcntrl.msg.failed_to_read_snapshots_for_p": "Failed to read snapshots for patch.",

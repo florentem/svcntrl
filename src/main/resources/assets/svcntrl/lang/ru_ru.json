@@ -59,9 +59,12 @@
   "svcntrl.msg.creating_auto_save_before_rest": "Создание автосохранения перед восстановлением...",
   "svcntrl.msg.saving_project": "Сохранение проекта '",
   "svcntrl.msg.invalid_name_use_only_letters": "Недопустимое имя. Используйте только буквы, цифры, подчеркивания и дефисы (макс 32 симв.).",
-
+  "svcntrl.msg.project_was_permanently_deleted": "Проект '%s' был безвозвратно удален.",
+  "svcntrl.msg.branch_deleted": "Ветка '%s' удалена.",
+  "svcntrl.msg.snapshot_deleted": "Снимок %s (%s) удален.",
   "svcntrl.msg.branch_already_exists": "Ветка уже существует.",
   "svcntrl.msg.restore": " [Восстановить]",
+  "svcntrl.msg.warning_restore_immediate": "Внимание: restore срабатывает сразу, но защищен автосейвом.",
   "svcntrl.msg.failed_to_schedule_patch_resto": "Не удалось запланировать восстановление патча.",
   "svcntrl.msg.failed_to_read_snapshot_file": "Не удалось прочитать файл снимка.",
   "svcntrl.msg.failed_to_read_snapshots_for_p": "Не удалось прочитать снимки для патча.",

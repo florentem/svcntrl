@@ -56,14 +56,16 @@ public class TaskScheduler {
         
         if (nextTaskIndex >= tasks.size()) nextTaskIndex = 0;
         
-        int checkedTasks = 0;
-        while (checkedTasks < tasks.size()) {
+        int tasksToProcess = tasks.size();
+        while (tasksToProcess > 0) {
+            if (tasks.isEmpty()) break;
+            
             long remainingNs = globalBudgetNs - (System.nanoTime() - startNs);
             if (remainingNs <= 500_000L) {
                 break;
             }
             
-            long timePerTask = remainingNs / (tasks.size() - checkedTasks);
+            long timePerTask = remainingNs / tasksToProcess;
             
             TickTask task = tasks.get(nextTaskIndex);
             boolean done = false;
@@ -88,7 +90,7 @@ public class TaskScheduler {
             if (nextTaskIndex >= tasks.size()) {
                 nextTaskIndex = 0;
             }
-            checkedTasks++;
+            tasksToProcess--;
         }
     }
 }

@@ -596,6 +596,7 @@ public class SvcntrlCommands {
         source.sendFeedback(() -> Text.literal("/svcntrl log [auto|manual] [page] [\"filter\"] - View snapshot history").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_restore_manual_auto_id").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.literal("/svcntrl restore patch <target> <base> [--nosave] - Apply diff").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.warning_restore_immediate").formatted(Formatting.RED), false);
         source.sendFeedback(() -> Text.literal("/svcntrl deletesave manual|auto <id> - Delete a snapshot").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.literal("--- Preview ---").formatted(Formatting.GRAY), false);
         source.sendFeedback(() -> Text.literal("/svcntrl preview start [auto|manual] <id> - Preview a snapshot").formatted(Formatting.YELLOW), false);
@@ -702,7 +703,7 @@ public class SvcntrlCommands {
         }
         com.svcntrl.core.PreviewManager.getInstance().stopPreviewForProject(source.getServer(), name);
         ProjectManager.getInstance().removeProject(name);
-        source.sendFeedback(() -> Text.literal("Project '" + name + "' was permanently deleted.").formatted(Formatting.RED), true);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.project_was_permanently_deleted", name).formatted(Formatting.RED), true);
         return 1;
     }
 
@@ -910,16 +911,18 @@ public class SvcntrlCommands {
                 category = "auto";
             }
             
-            project.setCurrentBranchName(name);
-            ProjectManager.getInstance().saveProject(project);
-            
             if (restoreId == -1) {
+                project.setCurrentBranchName(name);
+                ProjectManager.getInstance().saveProject(project);
                 source.sendFeedback(() -> Text.literal("Checked out to branch '" + name + "'. Branch is empty.").formatted(Formatting.GREEN), false);
                 return;
             }
             
             source.sendFeedback(() -> Text.literal("Restoring branch '" + name + "' state...").formatted(Formatting.YELLOW), false);
-            boolean success = AreaSerializer.restoreArea(player, world, project, name, category, restoreId, false);
+            boolean success = AreaSerializer.restoreArea(player, world, project, name, category, restoreId, false, () -> {
+                project.setCurrentBranchName(name);
+                ProjectManager.getInstance().saveProject(project);
+            }, null);
             if (!success) {
                 source.sendError(Text.translatable("svcntrl.msg.failed_to_load_branch_data"));
             }
@@ -963,7 +966,7 @@ public class SvcntrlCommands {
         project.deleteBranch(name);
         ProjectManager.getInstance().deleteBranchDir(project, name);
         ProjectManager.getInstance().saveProject(project);
-        source.sendFeedback(() -> Text.literal("Branch '" + name + "' deleted.").formatted(Formatting.GREEN), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.branch_deleted", name).formatted(Formatting.GREEN), false);
         resyncCommands(player);
         return 1;
     }
@@ -978,8 +981,22 @@ public class SvcntrlCommands {
         Project.Branch branch = project.getBranch(project.getCurrentBranchName());
         java.util.List<Project.SnapshotMeta> snapshots = category.equals("manual") ? branch.getManualSnapshots() : branch.getAutoSnapshots();
         
-        java.util.Optional<Project.SnapshotMeta> targetOpt = snapshots.stream().filter(m -> m.getId() == id).findFirst();
-        if (targetOpt.isEmpty()) {
+        int left = 0, right = snapshots.size() - 1;
+        boolean found = false;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            int midId = snapshots.get(mid).getId();
+            if (midId == id) {
+                found = true;
+                break;
+            } else if (midId < id) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+        
+        if (!found) {
             source.sendError(Text.translatable("svcntrl.msg.snapshot_not_found"));
             return 0;
         }
@@ -992,23 +1009,16 @@ public class SvcntrlCommands {
             branch.removeAutoSnapshot(id);
         }
         
+        ProjectManager.getInstance().saveProject(project);
+        
         com.svcntrl.SvcntrlMod.runAsync(() -> {
             try {
                 java.nio.file.Files.deleteIfExists(snapshotPath);
-                ProjectManager.getInstance().saveProject(project);
             } catch (java.io.IOException e) {
                 com.svcntrl.SvcntrlMod.LOGGER.error("Failed to delete snapshot file", e);
-                source.getServer().execute(() -> {
-                    if (category.equals("manual")) {
-                        branch.addManualSnapshotDirect(targetOpt.get());
-                    } else {
-                        branch.addAutoSnapshotDirect(targetOpt.get());
-                    }
-                    ProjectManager.getInstance().saveProject(project);
-                });
             }
         });
-        source.sendFeedback(() -> Text.literal("Snapshot " + id + " (" + category + ") deleted.").formatted(Formatting.GREEN), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.snapshot_deleted", String.valueOf(id), category).formatted(Formatting.GREEN), false);
         return 1;
     }
 
@@ -1109,7 +1119,7 @@ public class SvcntrlCommands {
             source.sendFeedback(() -> Text.translatable("svcntrl.msg.creating_auto_save_before_rest").formatted(Formatting.YELLOW), false);
             AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", autoId, () -> {
                 project.trimAutoSnapshots(currentBranch, (category.equals("auto") && targetBranch.equals(currentBranch)) ? new int[]{id} : new int[0]);
-                boolean success = AreaSerializer.restoreArea(player, world, project, targetBranch, category, id, excludeIntersections);
+                boolean success = AreaSerializer.restoreArea(player, world, project, targetBranch, category, id, excludeIntersections, null, null);
                 if (success) {
                     ProjectManager.getInstance().saveProject(project);
                 } else {
@@ -1120,7 +1130,7 @@ public class SvcntrlCommands {
                 source.sendError(Text.literal("Backup failed: " + err + ". Restore cancelled."));
             });
         } else {
-            boolean success = AreaSerializer.restoreArea(player, world, project, targetBranch, category, id, excludeIntersections);
+            boolean success = AreaSerializer.restoreArea(player, world, project, targetBranch, category, id, excludeIntersections, null, null);
             if (!success) {
                 source.sendError(Text.translatable("svcntrl.msg.failed_to_restore_snapshot_mis"));
             }
@@ -1147,7 +1157,7 @@ public class SvcntrlCommands {
             
             AreaSerializer.saveAreaAsync(player, world, project, branchName, "auto", autoId, () -> {
                 project.trimAutoSnapshots(branchName, category.equals("auto") ? new int[]{targetId, baseId} : new int[0]);
-                boolean success = AreaSerializer.restorePatchArea(player, world, project, branchName, category, targetId, branchName, category, baseId, excludeIntersections);
+                boolean success = AreaSerializer.restorePatchArea(player, world, project, branchName, category, targetId, branchName, category, baseId, excludeIntersections, null, null);
                 if (success) {
                     source.sendFeedback(() -> Text.translatable("svcntrl.msg.applying_patch_entities_fully").formatted(Formatting.GREEN), false);
                     ProjectManager.getInstance().saveProject(project);
@@ -1159,7 +1169,7 @@ public class SvcntrlCommands {
                 source.sendError(Text.literal("Failed to save: " + err));
             });
         } else {
-            boolean success = AreaSerializer.restorePatchArea(player, world, project, branchName, category, targetId, branchName, category, baseId, excludeIntersections);
+            boolean success = AreaSerializer.restorePatchArea(player, world, project, branchName, category, targetId, branchName, category, baseId, excludeIntersections, null, null);
             if (success) {
                 source.sendFeedback(() -> Text.translatable("svcntrl.msg.applying_patch_entities_fully").formatted(Formatting.GREEN), false);
                 ProjectManager.getInstance().saveProject(project);
@@ -1191,7 +1201,7 @@ public class SvcntrlCommands {
             
             AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", autoId, () -> {
                 project.trimAutoSnapshots(currentBranch, category.equals("auto") ? new int[]{targetBranch.equals(currentBranch) ? targetId : -1, baseBranch.equals(currentBranch) ? baseId : -1} : new int[0]);
-                boolean success = AreaSerializer.restorePatchArea(player, world, project, targetBranch, category, targetId, baseBranch, category, baseId, excludeIntersections);
+                boolean success = AreaSerializer.restorePatchArea(player, world, project, targetBranch, category, targetId, baseBranch, category, baseId, excludeIntersections, null, null);
                 if (success) {
                     source.sendFeedback(() -> Text.translatable("svcntrl.msg.cross_patch_applied_successful").formatted(Formatting.GREEN), false);
                     ProjectManager.getInstance().saveProject(project);
@@ -1204,7 +1214,7 @@ public class SvcntrlCommands {
                 source.sendError(Text.literal("Failed to auto-save, cancelling patch: " + err));
             });
         } else {
-            boolean success = AreaSerializer.restorePatchArea(player, world, project, targetBranch, category, targetId, baseBranch, category, baseId, excludeIntersections);
+            boolean success = AreaSerializer.restorePatchArea(player, world, project, targetBranch, category, targetId, baseBranch, category, baseId, excludeIntersections, null, null);
             if (success) {
                 source.sendFeedback(() -> Text.translatable("svcntrl.msg.cross_patch_applied_successful").formatted(Formatting.GREEN), false);
                 ProjectManager.getInstance().saveProject(project);
