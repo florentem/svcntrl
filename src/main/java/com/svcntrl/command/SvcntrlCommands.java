@@ -147,7 +147,7 @@ public class SvcntrlCommands {
                     )
                 )
                 
-                .then(literal("deletesave").requires(requirePerm("svcntrl.command.snapshot.delete"))
+                .then(literal("deletesave").requires(s -> requirePerm("svcntrl.command.snapshot.delete").test(s) && isOwnerOrAdmin(s))
                     .then(literal("manual")
                         .then(argument("id", IntegerArgumentType.integer(1))
                             .suggests((ctx, builder) -> suggestSnapshotIds(ctx, builder, "manual"))
@@ -974,7 +974,6 @@ public class SvcntrlCommands {
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
         if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
-        if (!project.isOwner(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access_only_the")); return 0; }
 
         Project.Branch branch = project.getBranch(project.getCurrentBranchName());
         java.util.List<Project.SnapshotMeta> snapshots = category.equals("manual") ? branch.getManualSnapshots() : branch.getAutoSnapshots();

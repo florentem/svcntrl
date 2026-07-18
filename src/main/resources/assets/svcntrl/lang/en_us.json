@@ -59,7 +59,7 @@
   "svcntrl.msg.creating_auto_save_before_rest": "Creating auto-save before restore...",
   "svcntrl.msg.saving_project": "Saving project '",
   "svcntrl.msg.invalid_name_use_only_letters": "Invalid name. Use only letters, numbers, underscores, and hyphens (max 32 chars).",
-  "svcntrl.msg.you_don_t_have_access_only_the": "You don't have access. Only the owner can delete snapshots.",
+
   "svcntrl.msg.branch_already_exists": "Branch already exists.",
   "svcntrl.msg.restore": " [Restore]",
   "svcntrl.msg.failed_to_schedule_patch_resto": "Failed to schedule patch restore.",

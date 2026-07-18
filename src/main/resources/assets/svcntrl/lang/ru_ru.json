@@ -59,7 +59,7 @@
   "svcntrl.msg.creating_auto_save_before_rest": "Создание автосохранения перед восстановлением...",
   "svcntrl.msg.saving_project": "Сохранение проекта '",
   "svcntrl.msg.invalid_name_use_only_letters": "Недопустимое имя. Используйте только буквы, цифры, подчеркивания и дефисы (макс 32 симв.).",
-  "svcntrl.msg.you_don_t_have_access_only_the": "У вас нет доступа. Только владелец может удалять снимки.",
+
   "svcntrl.msg.branch_already_exists": "Ветка уже существует.",
   "svcntrl.msg.restore": " [Восстановить]",
   "svcntrl.msg.failed_to_schedule_patch_resto": "Не удалось запланировать восстановление патча.",
