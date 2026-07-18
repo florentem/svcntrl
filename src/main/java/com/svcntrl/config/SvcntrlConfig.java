@@ -13,7 +13,14 @@ import java.nio.file.Path;
 
 public class SvcntrlConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("svcntrl.json");
+    private static Path CONFIG_PATH;
+    static {
+        try {
+            CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("svcntrl.json");
+        } catch (Throwable t) {
+            CONFIG_PATH = Path.of("svcntrl.json");
+        }
+    }
 
     public String outlineParticle = "minecraft:flame";
     public int outlineFrequencyTicks = 15;
