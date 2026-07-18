@@ -35,6 +35,7 @@ public class SvcntrlConfig {
             "minecraft:cherry_leaves", "minecraft:soul", "minecraft:crimson_spore"
     };
     public boolean autoSaveOnBranchSwitch = true;
+    public boolean autoSaveOnBranchCreate = true;
     public boolean autoSaveOnRestore = true;
     public int maxAutoSnapshots = 10;
 
@@ -72,6 +73,9 @@ public class SvcntrlConfig {
                     if (!loaded.autoSaveOnBranchSwitch && defaults.autoSaveOnBranchSwitch) {
                         // Only warn — the user may have intentionally set it to false
                         SvcntrlMod.LOGGER.warn("[svcntrl] autoSaveOnBranchSwitch is false. If unintentional, check your config.");
+                    }
+                    if (!loaded.autoSaveOnBranchCreate && defaults.autoSaveOnBranchCreate) {
+                        SvcntrlMod.LOGGER.warn("[svcntrl] autoSaveOnBranchCreate is false. If unintentional, check your config.");
                     }
                     if (!loaded.autoSaveOnRestore && defaults.autoSaveOnRestore) {
                         SvcntrlMod.LOGGER.warn("[svcntrl] autoSaveOnRestore is false. If unintentional, check your config.");
