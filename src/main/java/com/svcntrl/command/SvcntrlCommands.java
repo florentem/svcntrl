@@ -36,18 +36,15 @@ public class SvcntrlCommands {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess) {
         dispatcher.register(literal("svcntrl")
-                // /svcntrl _upload (Hidden command for confirmation click)
-                .then(literal("_upload").requires(s -> s.getPlayer() != null && com.svcntrl.core.ExportManager.hasPendingUpload(s.getPlayer().getUuid()))
-                    .then(argument("choice", StringArgumentType.word())
-                        .executes(ctx -> executeUpload(ctx.getSource(), StringArgumentType.getString(ctx, "choice")))
-                    )
-                )
-
-                // /svcntrl autoupload <true|false|reset>
-                .then(literal("autoupload").requires(s -> s.getPlayer() != null)
-                    .then(argument("state", StringArgumentType.word())
-                        .executes(ctx -> executeAutoUpload(ctx.getSource(), StringArgumentType.getString(ctx, "state")))
-                    )
+                // /svcntrl upload
+                .then(literal("upload").requires(s -> s.getPlayer() != null)
+                    .then(literal("always").executes(ctx -> executeUpload(ctx.getSource(), "always")))
+                    .then(literal("never").executes(ctx -> executeUpload(ctx.getSource(), "never")))
+                    .then(literal("reset").executes(ctx -> executeUpload(ctx.getSource(), "reset")))
+                    .then(literal("yes").requires(s -> com.svcntrl.core.ExportManager.hasPendingUpload(s.getPlayer().getUuid()))
+                        .executes(ctx -> executeUpload(ctx.getSource(), "yes")))
+                    .then(literal("no").requires(s -> com.svcntrl.core.ExportManager.hasPendingUpload(s.getPlayer().getUuid()))
+                        .executes(ctx -> executeUpload(ctx.getSource(), "no")))
                 )
 
                 // /svcntrl project ...
@@ -612,7 +609,7 @@ public class SvcntrlCommands {
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_export_id_export_snaps").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.literal("/svcntrl export diff <target> <base> - Export diff as schematic").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.literal("/svcntrl export all - Export full project archive").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.literal("/svcntrl autoupload true|false|reset - Toggle auto cloud upload").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl upload always|never|reset - Set default cloud upload preference").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.literal("--- Branches ---").formatted(Formatting.GRAY), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_branch_create_name_nos").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_branch_checkout_name_n").formatted(Formatting.YELLOW), false);
@@ -1343,29 +1340,40 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         
-        java.nio.file.Path file = com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid());
-        if (file == null || !java.nio.file.Files.exists(file)) {
-            source.sendError(Text.translatable("svcntrl.msg.no_valid_export_file_pending_f"));
-            return 0;
+        if ("reset".equalsIgnoreCase(choice)) {
+            com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), null);
+            source.sendFeedback(() -> Text.literal("Auto-upload preference reset. You will be prompted again.").formatted(Formatting.GREEN), false);
+            return 1;
         }
 
-        // 4.5: "no" now means "skip this time only" (does NOT change the persistent preference).
-        // To permanently disable, use /svcntrl autoupload false.
         if ("never".equalsIgnoreCase(choice)) {
             com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), false);
-            source.sendFeedback(() -> Text.literal("Auto-upload disabled. Files will stay local.").formatted(Formatting.YELLOW), false);
+            source.sendFeedback(() -> Text.literal("Auto-upload disabled. Files will stay local.").formatted(Formatting.GREEN), false);
+            com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid()); // discard if any
             return 1;
         }
+
+        if ("always".equalsIgnoreCase(choice)) {
+            com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), true);
+            source.sendFeedback(() -> Text.literal("Auto-upload enabled.").formatted(Formatting.GREEN), false);
+            // Fallthrough to upload if there is a pending file
+        }
+
+        java.nio.file.Path file = com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid());
 
         if ("no".equalsIgnoreCase(choice)) {
-            // Consume and discard the pending upload entry, but KEEP the file local
-            source.sendFeedback(() -> Text.literal("Upload skipped. File kept in server 'exports' folder. Use /svcntrl autoupload false to disable prompts.").formatted(Formatting.YELLOW), false);
+            if (file != null) {
+                source.sendFeedback(() -> Text.literal("Upload skipped. File kept in server 'exports' folder.").formatted(Formatting.YELLOW), false);
+            }
             return 1;
         }
 
-        // 4.4: Accept "true"/"always" symmetrically
-        if ("always".equalsIgnoreCase(choice) || "true".equalsIgnoreCase(choice)) {
-            com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), true);
+        if (file == null || !java.nio.file.Files.exists(file)) {
+            if ("yes".equalsIgnoreCase(choice)) {
+                source.sendError(Text.translatable("svcntrl.msg.no_valid_export_file_pending_f"));
+                return 0;
+            }
+            return 1; // 'always' with no file is valid (we just enabled it)
         }
 
         source.sendFeedback(() -> Text.literal("Uploading " + file.getFileName().toString() + " to public endpoint...").formatted(Formatting.YELLOW), false);
@@ -1373,25 +1381,6 @@ public class SvcntrlCommands {
             com.svcntrl.core.ExportManager.doActualUpload(file, player);
         });
         
-        return 1;
-    }
-
-    private static int executeAutoUpload(ServerCommandSource source, String state) {
-        ServerPlayerEntity player = source.getPlayer();
-        if (player == null) return 0;
-        if ("reset".equalsIgnoreCase(state)) {
-            com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), null);
-            source.sendFeedback(() -> Text.literal("Auto-upload preference reset. You will be prompted again.").formatted(Formatting.GREEN), false);
-        } else if ("true".equalsIgnoreCase(state) || "yes".equalsIgnoreCase(state)) {
-            com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), true);
-            source.sendFeedback(() -> Text.literal("Auto-upload enabled.").formatted(Formatting.GREEN), false);
-        } else if ("false".equalsIgnoreCase(state) || "no".equalsIgnoreCase(state)) {
-            com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), false);
-            source.sendFeedback(() -> Text.literal("Auto-upload disabled.").formatted(Formatting.GREEN), false);
-        } else {
-            source.sendError(Text.literal("Invalid state. Use true, false, or reset."));
-            return 0;
-        }
         return 1;
     }
 
