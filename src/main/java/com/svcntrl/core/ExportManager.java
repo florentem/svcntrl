@@ -718,11 +718,17 @@ public class ExportManager {
                                 .withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl _upload once"))
                                 .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.literal("Upload this file but ask again next time")))))
                 .append(" ")
-                .append(net.minecraft.text.Text.literal("[NO]")
+                .append(net.minecraft.text.Text.literal("[NO (KEEP LOCAL)]")
                         .formatted(net.minecraft.util.Formatting.RED, net.minecraft.util.Formatting.BOLD)
                         .styled(style -> style
                                 .withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl _upload no"))
-                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.literal("Do not upload and discard file")))));
+                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.literal("Do not upload. The file will remain in the server's exports folder.")))))
+                .append(" ")
+                .append(net.minecraft.text.Text.literal("[NO, NEVER]")
+                        .formatted(net.minecraft.util.Formatting.DARK_RED, net.minecraft.util.Formatting.BOLD)
+                        .styled(style -> style
+                                .withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl _upload never"))
+                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.literal("Never upload and never ask again (keeps files local)")))));
 
         player.sendMessage(uploadPrompt, false);
         player.sendMessage(net.minecraft.text.Text.literal("(You can change this later with /svcntrl autoupload <true/false/reset>)").formatted(net.minecraft.util.Formatting.GRAY), false);

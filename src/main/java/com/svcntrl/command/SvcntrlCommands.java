@@ -1345,15 +1345,17 @@ public class SvcntrlCommands {
         
         // 4.5: "no" now means "skip this time only" (does NOT change the persistent preference).
         // To permanently disable, use /svcntrl autoupload false.
+        if ("never".equalsIgnoreCase(choice)) {
+            com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), false);
+            com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid());
+            source.sendFeedback(() -> Text.literal("Auto-upload disabled. Files will stay local.").formatted(Formatting.YELLOW), false);
+            return 1;
+        }
+
         if ("no".equalsIgnoreCase(choice)) {
-            // Consume and discard the pending upload entry AND delete the physical temp file
-            java.nio.file.Path orphan = com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid());
-            if (orphan != null) {
-                com.svcntrl.SvcntrlMod.runAsync(() -> {
-                    try { java.nio.file.Files.deleteIfExists(orphan); } catch (java.io.IOException ignored) {}
-                });
-            }
-            source.sendFeedback(() -> Text.literal("Upload skipped. File removed. Use /svcntrl autoupload false to disable permanently.").formatted(Formatting.YELLOW), false);
+            // Consume and discard the pending upload entry, but KEEP the file local
+            com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid());
+            source.sendFeedback(() -> Text.literal("Upload skipped. File kept in server 'exports' folder. Use /svcntrl autoupload false to disable prompts.").formatted(Formatting.YELLOW), false);
             return 1;
         }
 
