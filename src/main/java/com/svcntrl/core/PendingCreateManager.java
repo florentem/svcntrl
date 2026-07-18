@@ -48,12 +48,9 @@ public class PendingCreateManager {
         }
 
         pending.put(player.getUuid(), new PendingCreate(projectName, System.currentTimeMillis() + 60_000L));
-        player.sendMessage(Text.literal("Started creation of project '" + projectName + "'. ")
-                .formatted(Formatting.GREEN)
-                .append(Text.translatable("svcntrl.msg.left_right_click_blocks_to_set")
-                        .formatted(Formatting.YELLOW))
-                .append(Text.translatable("svcntrl.msg.you_have_1_minute_before_this")
-                        .formatted(Formatting.GRAY)), false);
+        player.sendMessage(Text.translatable("svcntrl.msg.started_creation", projectName).formatted(Formatting.GREEN), false);
+        player.sendMessage(Text.translatable("svcntrl.msg.left_right_click_blocks_to_set").formatted(Formatting.YELLOW), false);
+        player.sendMessage(Text.translatable("svcntrl.msg.you_have_1_minute_before_this").formatted(Formatting.GRAY), false);
     }
 
     public boolean handleLeftClick(ServerPlayerEntity player, BlockPos pos) {

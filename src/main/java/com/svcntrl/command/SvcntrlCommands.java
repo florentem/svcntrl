@@ -596,6 +596,7 @@ public class SvcntrlCommands {
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.log").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_restore_manual_auto_id").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.restore_patch").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.restore_patch_cross").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.warning_restore_immediate").formatted(Formatting.RED), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.deletesave").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.preview").formatted(Formatting.GRAY), false);

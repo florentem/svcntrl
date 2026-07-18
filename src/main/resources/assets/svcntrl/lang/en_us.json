@@ -113,6 +113,7 @@
   "svcntrl.msg.help.snapshots": "--- Snapshots ---",
   "svcntrl.msg.help.log": "/svcntrl log [auto|manual] [page] [\"filter\"] - View snapshot history",
   "svcntrl.msg.help.restore_patch": "/svcntrl restore patch <target> <base> [--nosave] - Apply diff",
+  "svcntrl.msg.help.restore_patch_cross": "/svcntrl restore patch cross <tb> <tid> <bb> <bid> - Cross branch patch",
   "svcntrl.msg.help.deletesave": "/svcntrl deletesave manual|auto <id> - Delete a snapshot",
   "svcntrl.msg.help.preview": "--- Preview ---",
   "svcntrl.msg.help.preview_start": "/svcntrl preview start [auto|manual] <id> - Preview a snapshot",
