@@ -712,11 +712,17 @@ public class ExportManager {
                                 .withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl _upload yes"))
                                 .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.literal("Upload this file and all future exports automatically")))))
                 .append(" ")
-                .append(net.minecraft.text.Text.literal("[NO, NEVER]")
+                .append(net.minecraft.text.Text.literal("[YES, ONCE]")
+                        .formatted(net.minecraft.util.Formatting.AQUA, net.minecraft.util.Formatting.BOLD)
+                        .styled(style -> style
+                                .withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl _upload once"))
+                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.literal("Upload this file but ask again next time")))))
+                .append(" ")
+                .append(net.minecraft.text.Text.literal("[NO]")
                         .formatted(net.minecraft.util.Formatting.RED, net.minecraft.util.Formatting.BOLD)
                         .styled(style -> style
                                 .withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl _upload no"))
-                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.literal("Do not upload and never ask again")))));
+                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.literal("Do not upload and discard file")))));
 
         player.sendMessage(uploadPrompt, false);
         player.sendMessage(net.minecraft.text.Text.literal("(You can change this later with /svcntrl autoupload <true/false/reset>)").formatted(net.minecraft.util.Formatting.GRAY), false);
