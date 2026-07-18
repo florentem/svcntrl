@@ -828,40 +828,34 @@ public class SvcntrlCommands {
         project.getOrCreateBranch(name);
         ProjectManager.getInstance().saveProject(project);
         
-        if (!noSave) {
-            String fallbackBranch = project.getCurrentBranchName();
-            Runnable createInitialCommit = () -> {
-                project.setCurrentBranchName(name);
-                source.sendFeedback(() -> Text.translatable("svcntrl.msg.branch_created_saving", name).formatted(Formatting.YELLOW), false);
-                int manualId = project.addManualSnapshot(name, "Initial commit for branch " + name, player.getUuid(), player.getName().getString());
-                AreaSerializer.saveAreaAsync(player, world, project, name, "manual", manualId, () -> {
-                    source.sendFeedback(() -> Text.translatable("svcntrl.msg.branch_state_saved").formatted(Formatting.GREEN), false);
-                    ProjectManager.getInstance().saveProject(project);
-                }, err -> {
-                    project.setCurrentBranchName(fallbackBranch);
-                    rollbackSnapshot(project, name, manualId, true);
-                    source.sendError(Text.translatable("svcntrl.msg.failed_initial_commit", err));
-                });
-            };
-
-            if (com.svcntrl.config.SvcntrlConfig.getInstance().autoSaveOnBranchCreate) {
-                String currentBranch = project.getCurrentBranchName();
-                source.sendFeedback(() -> Text.translatable("svcntrl.msg.saving_before_branch_create", currentBranch).formatted(Formatting.YELLOW), false);
-                int currentAutoId = project.addAutoSnapshot(currentBranch, "Auto-save before creating branch " + name, player.getUuid(), player.getName().getString());
-                AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", currentAutoId, () -> {
-                    project.trimAutoSnapshots(currentBranch);
-                    createInitialCommit.run();
-                }, err -> {
-                    rollbackSnapshot(project, currentBranch, currentAutoId, true);
-                    source.sendError(Text.translatable("svcntrl.msg.failed_current_branch_save", err));
-                });
-            } else {
-                createInitialCommit.run();
-            }
-        } else {
+        String fallbackBranch = project.getCurrentBranchName();
+        Runnable createInitialCommit = () -> {
             project.setCurrentBranchName(name);
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.branch_created", name).formatted(Formatting.GREEN), false);
-            ProjectManager.getInstance().saveProject(project);
+            source.sendFeedback(() -> Text.translatable("svcntrl.msg.branch_created_saving", name).formatted(Formatting.YELLOW), false);
+            int manualId = project.addManualSnapshot(name, "Initial commit for branch " + name, player.getUuid(), player.getName().getString());
+            AreaSerializer.saveAreaAsync(player, world, project, name, "manual", manualId, () -> {
+                source.sendFeedback(() -> Text.translatable("svcntrl.msg.branch_state_saved").formatted(Formatting.GREEN), false);
+                ProjectManager.getInstance().saveProject(project);
+            }, err -> {
+                project.setCurrentBranchName(fallbackBranch);
+                rollbackSnapshot(project, name, manualId, true);
+                source.sendError(Text.translatable("svcntrl.msg.failed_initial_commit", err));
+            });
+        };
+
+        if (!noSave && com.svcntrl.config.SvcntrlConfig.getInstance().autoSaveOnBranchCreate) {
+            String currentBranch = project.getCurrentBranchName();
+            source.sendFeedback(() -> Text.translatable("svcntrl.msg.saving_before_branch_create", currentBranch).formatted(Formatting.YELLOW), false);
+            int currentAutoId = project.addAutoSnapshot(currentBranch, "Auto-save before creating branch " + name, player.getUuid(), player.getName().getString());
+            AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", currentAutoId, () -> {
+                project.trimAutoSnapshots(currentBranch);
+                createInitialCommit.run();
+            }, err -> {
+                rollbackSnapshot(project, currentBranch, currentAutoId, true);
+                source.sendError(Text.translatable("svcntrl.msg.failed_current_branch_save", err));
+            });
+        } else {
+            createInitialCommit.run();
         }
         resyncCommands(player);
         return 1;
