@@ -1,6 +1,6 @@
 # svcntrl
 
-A server-side version control mod for Minecraft Fabric (1.21.8).
+A server-side or singleplayer version control mod for Minecraft Fabric (1.21.8).
 
 svcntrl brings a simplified Git-like workflow (based on snapshots) directly into Minecraft for builders and redstoners. It allows you to select areas, save snapshots, create branches, and instantly restore states without causing server lag.
 
