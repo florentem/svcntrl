@@ -150,7 +150,7 @@ public class UXManager {
                     for (Project project : ProjectManager.getInstance().getAllProjects()) {
                         if (!project.getWorldId().equals(worldId)) continue;
                         if (!project.contains(player.getBlockPos()) && player.getBlockPos().getSquaredDistance(new net.minecraft.util.math.BlockPos((project.getMin().getX() + project.getMax().getX()) / 2, (project.getMin().getY() + project.getMax().getY()) / 2, (project.getMin().getZ() + project.getMax().getZ()) / 2)) > 16384) continue;
-                        int index = Math.abs(project.getName().hashCode()) % pool.length;
+                        int index = (project.getName().hashCode() & 0x7fffffff) % pool.length;
                         spawnOutlineParticles(player, project, pool[index]);
                     }
                 } else if (outlinePlayers.contains(player.getUuid())) {

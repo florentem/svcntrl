@@ -33,7 +33,7 @@ public class PendingCreateManager {
             if (now > entry.getValue().expiryTime) {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());
                 if (player != null && !player.isDisconnected()) {
-                    player.sendMessage(Text.literal("Project creation for '" + entry.getValue().projectName + "' timed out.").formatted(Formatting.RED), false);
+                    player.sendMessage(Text.translatable("svcntrl.msg.creation_timed_out", entry.getValue().projectName).formatted(Formatting.RED), false);
                 }
                 return true;
             }
@@ -71,7 +71,7 @@ public class PendingCreateManager {
         }
         state.pos1 = pos;
         state.dimension = player.getWorld().getRegistryKey().getValue().toString();
-        player.sendMessage(Text.literal("Pos1 set to " + pos.toShortString() + " in " + state.dimension).formatted(Formatting.GREEN), false);
+        player.sendMessage(Text.translatable("svcntrl.msg.pos1_set", pos.toShortString(), state.dimension).formatted(Formatting.GREEN), false);
         checkCompletion(player, state);
         return true;
     }
@@ -91,7 +91,7 @@ public class PendingCreateManager {
         }
         state.pos2 = pos;
         state.dimension = player.getWorld().getRegistryKey().getValue().toString();
-        player.sendMessage(Text.literal("Pos2 set to " + pos.toShortString() + " in " + state.dimension).formatted(Formatting.GREEN), false);
+        player.sendMessage(Text.translatable("svcntrl.msg.pos2_set", pos.toShortString(), state.dimension).formatted(Formatting.GREEN), false);
         checkCompletion(player, state);
         return true;
     }
@@ -104,7 +104,7 @@ public class PendingCreateManager {
             long volume = dx * dy * dz;
             int maxVol = com.svcntrl.config.SvcntrlConfig.getInstance().maxRegionVolume;
             if (volume > maxVol) {
-                player.sendMessage(Text.literal("Project area too large! Maximum volume is " + maxVol + " blocks, but you selected " + volume + " blocks.")
+                player.sendMessage(Text.translatable("svcntrl.msg.area_too_large", maxVol, volume)
                         .formatted(Formatting.RED), false);
                 return;
             }
@@ -139,7 +139,7 @@ public class PendingCreateManager {
 
             if (ProjectManager.getInstance().createProject(project)) {
                 ProjectManager.getInstance().setActiveProject(player.getUuid(), project.getName());
-                player.sendMessage(Text.literal("Project '" + state.projectName + "' created successfully and set as active!")
+                player.sendMessage(Text.translatable("svcntrl.msg.project_created_success", state.projectName)
                         .formatted(Formatting.GREEN), false);
                 if (overlaps) {
                     player.sendMessage(Text.translatable("svcntrl.msg.warning_this_project_overlaps")

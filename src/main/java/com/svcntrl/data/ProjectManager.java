@@ -392,11 +392,18 @@ public class ProjectManager {
                     Path projectFile = projectDir.resolve("project.json");
                     Path tempFile = projectDir.resolve("project.json.tmp");
                     
-                    try (Writer writer = Files.newBufferedWriter(tempFile)) {
-                        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                        gson.toJson(serialized, writer);
+                    try {
+                        try (Writer writer = Files.newBufferedWriter(tempFile)) {
+                            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                            gson.toJson(serialized, writer);
+                        }
+                        Files.move(tempFile, projectFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+                    } catch (Throwable e) {
+                        try {
+                            Files.deleteIfExists(tempFile);
+                        } catch (java.io.IOException ignored) {}
+                        throw e;
                     }
-                    Files.move(tempFile, projectFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
                 } catch (Throwable e) {
                     SvcntrlMod.LOGGER.error("[svcntrl] Failed to save project " + project.getName(), e);
                 }

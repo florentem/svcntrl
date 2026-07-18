@@ -255,10 +255,11 @@ public class SaveTask implements TaskScheduler.TickTask {
         root.put("Entities", entityList);
 
         com.svcntrl.SvcntrlMod.runAsync(() -> {
+            Path tempPath = null;
             try {
                 Path filePath = ProjectManager.getInstance().getSnapshotPath(project, branchName, category, snapshotId);
                 Files.createDirectories(filePath.getParent());
-                Path tempPath = filePath.getParent().resolve(filePath.getFileName() + ".tmp");
+                tempPath = filePath.getParent().resolve(filePath.getFileName() + ".tmp");
                 NbtIo.writeCompressed(root, tempPath);
                 Files.move(tempPath, filePath, java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 SvcntrlMod.LOGGER.info("[svcntrl] Saved V2 snapshot {} ({}) for project '{}' — {} blocks ({} unique), {} entities",
@@ -275,6 +276,11 @@ public class SaveTask implements TaskScheduler.TickTask {
                     world.getServer().execute(() -> ProjectManager.getInstance().setProjectLocked(project, false));
                 }
             } catch (Throwable t) {
+                if (tempPath != null) {
+                    try {
+                        Files.deleteIfExists(tempPath);
+                    } catch (java.io.IOException ignored) {}
+                }
                 SvcntrlMod.LOGGER.error("[svcntrl] Fatal error in async save", t);
                 if (onError != null) {
                     world.getServer().execute(() -> {

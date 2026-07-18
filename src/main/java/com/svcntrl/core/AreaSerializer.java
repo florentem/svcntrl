@@ -135,7 +135,7 @@ public class AreaSerializer {
                     targetRoot.getInt("MinZ", 0) != baseRoot.getInt("MinZ", 0) ||
                     targetRoot.getInt("MaxZ", 0) != baseRoot.getInt("MaxZ", 0)) {
                     ProjectManager.getInstance().setProjectLocked(project, false);
-                    if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.literal("Cannot patch restore: Target and Base snapshots have different dimensions!").formatted(net.minecraft.util.Formatting.RED), false);
+                    if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.patch_diff_dims").formatted(net.minecraft.util.Formatting.RED), false);
                     return;
                 }
 
@@ -270,6 +270,7 @@ public class AreaSerializer {
         private final boolean[] patchMask;
         private final NbtList patchEntities;
         private final NbtList entitiesToRemove;
+        private final java.util.Set<String> entitiesToRemoveHashes;
         
         private java.util.List<Project> overlappingProjects = null;
         
@@ -297,6 +298,20 @@ public class AreaSerializer {
             this.entitiesToRemove = entitiesToRemove;
             this.onComplete = onComplete;
             this.onFail = onFail;
+            
+            if (entitiesToRemove != null && !entitiesToRemove.isEmpty()) {
+                this.entitiesToRemoveHashes = new java.util.HashSet<>();
+                for (int i = 0; i < entitiesToRemove.size(); i++) {
+                    NbtCompound eNbt = entitiesToRemove.getCompoundOrEmpty(i);
+                    String id = eNbt.getString("id", "");
+                    long rx = Math.round(eNbt.getDouble("svcntrl_RelX", 0) * 10);
+                    long ry = Math.round(eNbt.getDouble("svcntrl_RelY", 0) * 10);
+                    long rz = Math.round(eNbt.getDouble("svcntrl_RelZ", 0) * 10);
+                    this.entitiesToRemoveHashes.add(id + "|" + rx + "|" + ry + "|" + rz);
+                }
+            } else {
+                this.entitiesToRemoveHashes = null;
+            }
             
             this.phase = -1; // Always clear entities so removed entities are actually removed
             
@@ -386,23 +401,12 @@ public class AreaSerializer {
                             }
                         }
                         
-                        if (entitiesToRemove != null) {
-                            boolean match = false;
-                            for (int i = 0; i < entitiesToRemove.size(); i++) {
-                                NbtCompound removedNbt = entitiesToRemove.getCompoundOrEmpty(i);
-                                String id = removedNbt.getString("id", "");
-                                if (!id.equals(Registries.ENTITY_TYPE.getId(e.getType()).toString())) continue;
-                                
-                                double absX = min.getX() + removedNbt.getDouble("svcntrl_RelX", 0.0);
-                                double absY = min.getY() + removedNbt.getDouble("svcntrl_RelY", 0.0);
-                                double absZ = min.getZ() + removedNbt.getDouble("svcntrl_RelZ", 0.0);
-                                
-                                if (e.squaredDistanceTo(absX, absY, absZ) < 0.1) {
-                                    match = true;
-                                    break;
-                                }
-                            }
-                            return match;
+                        if (entitiesToRemoveHashes != null) {
+                            String id = Registries.ENTITY_TYPE.getId(e.getType()).toString();
+                            long rx = Math.round((e.getX() - min.getX()) * 10);
+                            long ry = Math.round((e.getY() - min.getY()) * 10);
+                            long rz = Math.round((e.getZ() - min.getZ()) * 10);
+                            return entitiesToRemoveHashes.contains(id + "|" + rx + "|" + ry + "|" + rz);
                         }
                         return true;
                     });
@@ -450,7 +454,7 @@ public class AreaSerializer {
                             }
                             if (skip) {
                                 currentIndex++; ops++;
-                                if ((ops & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
+                                if ((ops & 0x3F) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
                                 continue;
                             }
                         }
@@ -477,7 +481,7 @@ public class AreaSerializer {
                         }
                         
                         if (!state.equals(cachedChunk.getBlockState(mutable))) {
-                            world.setBlockState(mutable, state, Block.NOTIFY_LISTENERS | Block.FORCE_STATE | 32); // 32 = SKIP_DROPS
+                            world.setBlockState(mutable, state, Block.NOTIFY_LISTENERS | Block.FORCE_STATE | Block.SKIP_DROPS);
                         }
                     } else if (blockData != null) {
                         // V2
@@ -489,7 +493,7 @@ public class AreaSerializer {
                         if (patchMask != null && !patchMask[currentIndex]) {
                             currentIndex++;
                             ops++;
-                            if ((ops & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
+                            if ((ops & 0x3F) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
                             continue;
                         }
 
@@ -502,7 +506,7 @@ public class AreaSerializer {
                             }
                             if (skip) {
                                 currentIndex++; ops++;
-                                if ((ops & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
+                                if ((ops & 0x3F) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
                                 continue;
                             }
                         }
@@ -524,14 +528,14 @@ public class AreaSerializer {
                         }
 
                         if (!state.equals(cachedChunk.getBlockState(mutable))) {
-                            world.setBlockState(mutable, state, Block.NOTIFY_LISTENERS | Block.FORCE_STATE | 32); // 32 = SKIP_DROPS
+                            world.setBlockState(mutable, state, Block.NOTIFY_LISTENERS | Block.FORCE_STATE | Block.SKIP_DROPS);
                         }
                     }
                     
                     currentIndex++;
                     ops++;
                     
-                    if ((ops & 0xFF) == 0) {
+                    if ((ops & 0x3F) == 0) {
                         if (player != null && !player.isDisconnected()) {
                             long now = System.currentTimeMillis();
                             if (now - lastMessageTime > 500) {
@@ -564,7 +568,7 @@ public class AreaSerializer {
                         if (!patchMask[flatIndex]) {
                             currentIndex++;
                             ops++;
-                            if ((ops & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
+                            if ((ops & 0x3F) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
                             continue;
                         }
                     }
@@ -584,7 +588,7 @@ public class AreaSerializer {
                             }
                             if (skip) {
                                 currentIndex++; ops++;
-                                if ((ops & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
+                                if ((ops & 0x3F) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
                                 continue;
                             }
                         }
@@ -599,7 +603,7 @@ public class AreaSerializer {
                     currentIndex++;
                     ops++;
                     
-                    if ((ops & 0xFF) == 0) {
+                    if ((ops & 0x3F) == 0) {
                         if (player != null && totalBEs > 0) {
                             long now = System.currentTimeMillis();
                             if (now - lastMessageTime > 500) {
@@ -662,7 +666,7 @@ public class AreaSerializer {
                         }
                         if (skip) {
                             currentIndex++; ops++;
-                            if ((ops & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
+                            if ((ops & 0x3F) == 0 && (System.nanoTime() - startTime) > maxTimeNs) return false;
                             continue;
                         }
                     }
@@ -677,7 +681,7 @@ public class AreaSerializer {
                     currentIndex++;
                     ops++;
                     
-                    if ((ops & 0xFF) == 0) {
+                    if ((ops & 0x3F) == 0) {
                         if (player != null && entitiesToSpawn.size() > 0) {
                             long now = System.currentTimeMillis();
                             if (now - lastMessageTime > 500) {

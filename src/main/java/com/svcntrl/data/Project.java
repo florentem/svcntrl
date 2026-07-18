@@ -96,7 +96,7 @@ public class Project {
 
     public void trimAutoSnapshots(String branchName, int... excludeIds) {
         Branch branch = getOrCreateBranch(branchName);
-        while (branch.autoSnapshots.size() > 10) {
+        while (branch.autoSnapshots.size() > com.svcntrl.config.SvcntrlConfig.getInstance().maxAutoSnapshots) {
             // Find the oldest snapshot that is NOT in the excluded list
             SnapshotMeta toRemove = null;
             synchronized (branch.autoSnapshots) {

@@ -38,6 +38,7 @@ public class PreviewManager {
     private static final java.util.concurrent.atomic.AtomicInteger PREVIEW_ENTITY_IDS = new java.util.concurrent.atomic.AtomicInteger(-1000000);
     private final Map<UUID, String> previewingProjects = new ConcurrentHashMap<>();
     private final Map<UUID, net.minecraft.util.math.Box> previewBoundingBoxes = new ConcurrentHashMap<>();
+    private final Map<UUID, String> previewDimensions = new ConcurrentHashMap<>();
     private final java.util.Set<UUID> pendingPreviews = ConcurrentHashMap.newKeySet();
     
 
@@ -155,6 +156,7 @@ public class PreviewManager {
                     project.getMax().getX() + 1, project.getMax().getY() + 1, project.getMax().getZ() + 1
                 );
                 previewBoundingBoxes.put(player.getUuid(), bounds);
+                previewDimensions.put(player.getUuid(), player.getWorld().getRegistryKey().getValue().toString());
                 
                 List<Entity> realEntities = ((net.minecraft.server.world.ServerWorld)player.getWorld()).getOtherEntities(null, bounds);
                 if (!realEntities.isEmpty()) {
@@ -170,7 +172,7 @@ public class PreviewManager {
                 NbtList entities = root.getListOrEmpty("Entities");
                 TaskScheduler.getInstance().schedule(new StartPreviewTask(player, project.getMin(), root, entities));
                 
-                player.sendMessage(net.minecraft.text.Text.literal("Previewing " + branchName + ":" + category + " " + snapshotId + ". Use /svcntrl preview stop to exit.").formatted(net.minecraft.util.Formatting.AQUA));
+                player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.previewing", branchName, category, snapshotId).formatted(net.minecraft.util.Formatting.AQUA));
             });
         });
     }
@@ -179,6 +181,12 @@ public class PreviewManager {
         if (!hasAnyPreviews()) return;
         
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            String expectedDim = previewDimensions.get(player.getUuid());
+            if (expectedDim != null && !expectedDim.equals(player.getWorld().getRegistryKey().getValue().toString())) {
+                stopPreview(player);
+                continue;
+            }
+            
             net.minecraft.util.math.Box bounds = previewBoundingBoxes.get(player.getUuid());
             if (bounds != null) {
                 List<Entity> entities = ((net.minecraft.server.world.ServerWorld)player.getWorld()).getOtherEntities(null, bounds);
@@ -209,6 +217,7 @@ public class PreviewManager {
         pendingPreviews.remove(uuid);
         Map<net.minecraft.util.math.ChunkPos, Map<BlockPos, BlockState>> chunks = activePreviews.remove(uuid);
         previewingProjects.remove(uuid);
+        previewDimensions.remove(uuid);
         net.minecraft.util.math.Box bounds = previewBoundingBoxes.remove(uuid);
         
         if (chunks != null && !chunks.isEmpty()) {
@@ -367,7 +376,7 @@ public class PreviewManager {
                     currentIndex++;
                     ops++;
                     
-                    if ((ops & 0xFF) == 0) {
+                    if ((ops & 0x3F) == 0) {
                         long now = System.currentTimeMillis();
                         if (now - lastMessageTime > 500) {
                             float percent = (float) currentIndex / totalBlocks * 100f;
@@ -431,7 +440,7 @@ public class PreviewManager {
                     currentIndex++;
                     ops++;
                     
-                    if ((ops & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) {
+                    if ((ops & 0x3F) == 0 && (System.nanoTime() - startTime) > maxTimeNs) {
                         return false;
                     }
                 }
@@ -473,7 +482,7 @@ public class PreviewManager {
                 currentIndex++;
                 ops++;
                 
-                if ((ops & 0xFF) == 0) {
+                if ((ops & 0x3F) == 0) {
                     if (showProgress) {
                         long now = System.currentTimeMillis();
                         if (now - lastMessageTime > 500) {
