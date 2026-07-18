@@ -48,7 +48,7 @@ public class PendingCreateManager {
         }
 
         pending.put(player.getUuid(), new PendingCreate(projectName, System.currentTimeMillis() + 60_000L));
-        player.sendMessage(Text.literal("Started creation of project '" + projectName + "'.\n")
+        player.sendMessage(Text.literal("Started creation of project '" + projectName + "'. ")
                 .formatted(Formatting.GREEN)
                 .append(Text.translatable("svcntrl.msg.left_right_click_blocks_to_set")
                         .formatted(Formatting.YELLOW))
