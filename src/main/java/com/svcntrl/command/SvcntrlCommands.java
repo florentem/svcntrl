@@ -1343,26 +1343,24 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         
+        java.nio.file.Path file = com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid());
+        if (file == null || !java.nio.file.Files.exists(file)) {
+            source.sendError(Text.translatable("svcntrl.msg.no_valid_export_file_pending_f"));
+            return 0;
+        }
+
         // 4.5: "no" now means "skip this time only" (does NOT change the persistent preference).
         // To permanently disable, use /svcntrl autoupload false.
         if ("never".equalsIgnoreCase(choice)) {
             com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), false);
-            com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid());
             source.sendFeedback(() -> Text.literal("Auto-upload disabled. Files will stay local.").formatted(Formatting.YELLOW), false);
             return 1;
         }
 
         if ("no".equalsIgnoreCase(choice)) {
             // Consume and discard the pending upload entry, but KEEP the file local
-            com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid());
             source.sendFeedback(() -> Text.literal("Upload skipped. File kept in server 'exports' folder. Use /svcntrl autoupload false to disable prompts.").formatted(Formatting.YELLOW), false);
             return 1;
-        }
-
-        java.nio.file.Path file = com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid());
-        if (file == null || !java.nio.file.Files.exists(file)) {
-            source.sendError(Text.translatable("svcntrl.msg.no_valid_export_file_pending_f"));
-            return 0;
         }
 
         // 4.4: Accept "true"/"always" symmetrically
