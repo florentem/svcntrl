@@ -93,7 +93,7 @@
   "svcntrl.msg.failed_to_create_project_name": "Failed to create project. Name already exists.",
   "svcntrl.msg.you_have_1_minute_before_this": "(You have 1 minute before this cancels).",
   "svcntrl.msg.a_project_with_this_name_alrea": "A project with this name already exists.",
-  "svcntrl.msg.left_right_click_blocks_to_set": "Left/Right-click blocks to set Pos1/Pos2 with the wand item.",
+  "svcntrl.msg.left_right_click_blocks_to_set": "Left/Right-click blocks to set Pos1/Pos2.",
   "svcntrl.msg.loading_snapshot_for_preview": "Loading snapshot for preview...",
   "svcntrl.msg.clearing_preview_100_0": "Clearing Preview: 100.0%",
   "svcntrl.msg.loading_preview_100_0": "Loading Preview: 100.0%",

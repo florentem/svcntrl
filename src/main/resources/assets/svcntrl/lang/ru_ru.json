@@ -93,7 +93,7 @@
   "svcntrl.msg.failed_to_create_project_name": "Не удалось создать проект. Имя уже существует.",
   "svcntrl.msg.you_have_1_minute_before_this": "(У вас есть 1 минута до отмены).",
   "svcntrl.msg.a_project_with_this_name_alrea": "Проект с таким именем уже существует.",
-  "svcntrl.msg.left_right_click_blocks_to_set": "Левый/Правый клик по блокам, чтобы установить Pos1/Pos2 с помощью инструмента.",
+  "svcntrl.msg.left_right_click_blocks_to_set": "Левый/Правый клик по блокам, чтобы установить Pos1/Pos2.",
   "svcntrl.msg.loading_snapshot_for_preview": "Загрузка снимка для предпросмотра...",
   "svcntrl.msg.clearing_preview_100_0": "Очистка предпросмотра: 100.0%",
   "svcntrl.msg.loading_preview_100_0": "Загрузка предпросмотра: 100.0%",
