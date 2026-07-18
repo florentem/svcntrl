@@ -1365,8 +1365,8 @@ public class SvcntrlCommands {
             return 0;
         }
 
-        // 4.4: Accept "true"/"yes" symmetrically
-        if ("yes".equalsIgnoreCase(choice) || "true".equalsIgnoreCase(choice)) {
+        // 4.4: Accept "true"/"always" symmetrically
+        if ("always".equalsIgnoreCase(choice) || "true".equalsIgnoreCase(choice)) {
             com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), true);
         }
 
