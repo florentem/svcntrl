@@ -43,7 +43,6 @@
   "svcntrl.msg.project_saved_snapshot_id": "Проект сохранен! ID снимка: ",
   "svcntrl.msg.svcntrl_export_id_export_snaps": "/svcntrl export <id> - Экспортировать снимок в схематику WorldEdit",
   "svcntrl.msg.project_not_found": "Проект не найден.",
-  "svcntrl.msg.": "'...",
   "svcntrl.msg.only_owner_can_delete_branches": "Только владелец может удалять ветки.",
   "svcntrl.msg.branch_state_saved": "Состояние ветки сохранено.",
   "svcntrl.msg.snapshot_not_found": "Снимок не найден",

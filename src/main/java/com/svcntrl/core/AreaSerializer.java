@@ -76,10 +76,7 @@ public class AreaSerializer {
                 world.getServer().execute(() -> {
                     try {
                         BlockPos min = project.getMin();
-                        BlockPos max = project.getMax();
-
                         NbtList entities = root.getListOrEmpty("Entities");
-
                         TaskScheduler.getInstance().schedule(new RestoreTask(player, world, min, root, entities, project).setExcludeIntersections(excludeIntersections));
                         SvcntrlMod.LOGGER.info("[svcntrl] Scheduled restore task for project '{}' (snapshot {} {})", project.getName(), snapshotId, category);
                     } catch (Throwable t) {
@@ -89,10 +86,16 @@ public class AreaSerializer {
                     }
                 });
             } catch (Throwable e) {
-                SvcntrlMod.LOGGER.error("[svcntrl] Failed to read snapshot file: {}", filePath, e);
-                ProjectManager.getInstance().setProjectLocked(project, false);
-                if (player != null && !player.isDisconnected()) {
-                    player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_read_snapshot_file").formatted(net.minecraft.util.Formatting.RED));
+                // 1.2: Ensure unlock on any error path, including those not caught below
+                try {
+                    SvcntrlMod.LOGGER.error("[svcntrl] Failed to read snapshot file: {}", filePath, e);
+                    ProjectManager.getInstance().setProjectLocked(project, false);
+                    if (player != null && !player.isDisconnected()) {
+                        player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_read_snapshot_file").formatted(net.minecraft.util.Formatting.RED));
+                    }
+                } finally {
+                    // Belt-and-suspenders: guarantee unlock even if the catch block itself throws
+                    ProjectManager.getInstance().setProjectLocked(project, false);
                 }
             }
         });
@@ -345,11 +348,13 @@ public class AreaSerializer {
                 int maxChunkX = project.getMax().getX() >> 4;
                 int minChunkZ = min.getZ() >> 4;
                 int maxChunkZ = project.getMax().getZ() >> 4;
-                int totalChunks = (maxChunkX - minChunkX + 1) * (maxChunkZ - minChunkZ + 1);
+                // 2.6: these values are constant — compute once here rather than every tick
+                final int chunkCountX = maxChunkX - minChunkX + 1;
+                final int totalChunks = chunkCountX * (maxChunkZ - minChunkZ + 1);
                 
                 while (currentIndex < totalChunks) {
-                    int rcz = currentIndex / (maxChunkX - minChunkX + 1);
-                    int rcx = currentIndex % (maxChunkX - minChunkX + 1);
+                    int rcz = currentIndex / chunkCountX;
+                    int rcx = currentIndex % chunkCountX;
                     int chunkX = minChunkX + rcx;
                     int chunkZ = minChunkZ + rcz;
                     

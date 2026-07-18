@@ -47,7 +47,8 @@ public class SvcntrlConfig {
                     if (loaded.customExportEndpoint == null) loaded.customExportEndpoint = "";
                     
                     // Enforce hard limits to prevent Integer Overflow (max 100M blocks)
-                    if (loaded.maxRegionVolume <= 0 || loaded.maxRegionVolume > 100_000_000) loaded.maxRegionVolume = 100_000_000;
+                    // 5.3: Fallback to the default of 5M (not 100M) when value is out-of-range
+                    if (loaded.maxRegionVolume <= 0 || loaded.maxRegionVolume > 100_000_000) loaded.maxRegionVolume = 5_000_000;
                     
                     // Enforce hard limits for task budget to prevent server freeze (min 0.1ms, max 50ms)
                     if (loaded.taskBudgetNs < 100_000L) loaded.taskBudgetNs = 100_000L;
@@ -55,6 +56,16 @@ public class SvcntrlConfig {
                     
                     if (loaded.raycastParticlePool == null || loaded.raycastParticlePool.length == 0) {
                         loaded.raycastParticlePool = new SvcntrlConfig().raycastParticlePool;
+                    }
+                    // 5.2: Gson silently assigns false to boolean primitives when the JSON value is null.
+                    // Detect this by comparing to the defaults from a fresh instance.
+                    SvcntrlConfig defaults = new SvcntrlConfig();
+                    if (!loaded.autoSaveOnBranchSwitch && defaults.autoSaveOnBranchSwitch) {
+                        // Only warn — the user may have intentionally set it to false
+                        SvcntrlMod.LOGGER.warn("[svcntrl] autoSaveOnBranchSwitch is false. If unintentional, check your config.");
+                    }
+                    if (!loaded.autoSaveOnRestore && defaults.autoSaveOnRestore) {
+                        SvcntrlMod.LOGGER.warn("[svcntrl] autoSaveOnRestore is false. If unintentional, check your config.");
                     }
                     instance = loaded;
                 }

@@ -13,7 +13,7 @@ Everything starts with a **Project** (a cubic region in the world). You can free
 - `/svcntrl project create <name>` - Create a new project.
 - `/svcntrl project tp <name>` - Teleport to and select a project.
 - `/svcntrl project select <name>` - Set your active project manually.
-- `/svcntrl project select raycast` - Look at a project and right-click to select it visually.
+- `/svcntrl project raycast` - Look at a project and right-click to select it visually.
 - `/svcntrl outline` - Toggle particle borders for your active project.
 
 *(Other project commands: `/svcntrl project list`, `remove`)*

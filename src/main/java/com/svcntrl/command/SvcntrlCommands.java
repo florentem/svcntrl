@@ -77,11 +77,11 @@ public class SvcntrlCommands {
                             .suggests((ctx, builder) -> suggestProjects(ctx, builder))
                             .executes(ctx -> executeTp(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))
                     .then(literal("select").requires(requirePerm("svcntrl.command.project.select"))
-                        .then(literal("raycast")
-                            .executes(ctx -> executeSelectRaycast(ctx.getSource())))
                         .then(argument("name", StringArgumentType.word())
                             .suggests((ctx, builder) -> suggestProjects(ctx, builder))
                             .executes(ctx -> executeSelect(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))
+                    .then(literal("raycast").requires(requirePerm("svcntrl.command.project.select"))
+                        .executes(ctx -> executeSelectRaycast(ctx.getSource())))
                 )
 
                 // /svcntrl branch ...
@@ -554,10 +554,12 @@ public class SvcntrlCommands {
         if (player != null) {
             Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
             if (project != null) {
-                for (UUID memberUuid : project.getMembers()) {
-                    java.util.Optional<com.mojang.authlib.GameProfile> profileOpt = ctx.getSource().getServer().getUserCache().getByUuid(memberUuid);
-                    if (profileOpt.isPresent()) builder.suggest(profileOpt.get().getName());
-                }
+                List<String> names = project.getMembers().stream()
+                        .map(uuid -> ctx.getSource().getServer().getUserCache().getByUuid(uuid))
+                        .filter(java.util.Optional::isPresent)
+                        .map(opt -> opt.get().getName())
+                        .toList();
+                return net.minecraft.command.CommandSource.suggestMatching(names, builder);
             }
         }
         return builder.buildFuture();
@@ -589,15 +591,36 @@ public class SvcntrlCommands {
 
     private static int executeHelp(ServerCommandSource source) {
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_commands").formatted(Formatting.GOLD), false);
+        source.sendFeedback(() -> Text.literal("--- Projects ---").formatted(Formatting.GRAY), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_project_create_name_cr").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl project select <name> - Select active project").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl project raycast - Click to select a project").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl project tp [name] - Teleport to project").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl project trust/untrust <player> - Manage access").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_project_remove_name_fo").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl project list - List your projects").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("--- Snapshots ---").formatted(Formatting.GRAY), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_save_desc_create_a_man").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl log [auto|manual] [page] [\"filter\"] - View snapshot history").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_restore_manual_auto_id").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl restore patch <target> <base> [--nosave] - Apply diff").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl deletesave manual|auto <id> - Delete a snapshot").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("--- Preview ---").formatted(Formatting.GRAY), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl preview start [auto|manual] <id> - Preview a snapshot").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl preview stop - Exit preview mode").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("--- Export ---").formatted(Formatting.GRAY), false);
+        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_export_id_export_snaps").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl export diff <target> <base> - Export diff as schematic").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl export all - Export full project archive").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl autoupload true|false|reset - Toggle auto cloud upload").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("--- Branches ---").formatted(Formatting.GRAY), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_branch_create_name_nos").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_branch_checkout_name_n").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_branch_list_delete_man").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_save_desc_create_a_man").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_restore_manual_auto_id").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_export_id_export_snaps").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("--- Other ---").formatted(Formatting.GRAY), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl outline - Toggle project boundary particles").formatted(Formatting.YELLOW), false);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_pos1_pos2_set_position").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Text.literal("/svcntrl reload - Reload config").formatted(Formatting.YELLOW), false);
         return 1;
     }
 
@@ -687,8 +710,10 @@ public class SvcntrlCommands {
         if (project == null) { source.sendError(Text.translatable("svcntrl.msg.project_not_found")); return 0; }
         if (!project.isOwner(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.only_the_project_owner_or_admi")); return 0; }
         if (!force) {
-            source.sendError(Text.literal("Are you sure? Delete command: /svcntrl project remove " + name + " force"));
-            return 0;
+            // 3.8: Use sendFeedback (not sendError) for a confirmation prompt — it is not an error
+            // 1.4: Return 1 (not 0) — the command succeeded, it's just waiting for confirmation
+            source.sendFeedback(() -> Text.literal("Are you sure? Run: /svcntrl project remove " + name + " force").formatted(Formatting.YELLOW), false);
+            return 1;
         }
         if (project.isLocked()) {
             source.sendError(Text.translatable("svcntrl.msg.cannot_delete_project_an_opera"));
@@ -723,7 +748,9 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project != null && !project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        // 1.5: Always check access, even when project is null (null means no active project, not a bypass)
+        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         boolean active = UXManager.getInstance().toggleOutline(player.getUuid());
         source.sendFeedback(() -> Text.literal("Project outline " + (active ? "enabled." : "disabled.")).formatted(Formatting.GREEN), false);
         return 1;
@@ -949,8 +976,9 @@ public class SvcntrlCommands {
 
     private static int executeBranchDelete(ServerCommandSource source, String nameArg, boolean force) {
         if (!force) {
-            source.sendError(Text.literal("Are you sure? Delete branch command: /svcntrl branch delete " + nameArg + " force"));
-            return 0;
+            // 3.8 + 1.4: Use sendFeedback with yellow colour for confirmation prompt, return 1
+            source.sendFeedback(() -> Text.literal("Are you sure? Run: /svcntrl branch delete " + nameArg + " force").formatted(Formatting.YELLOW), false);
+            return 1;
         }
         String name = nameArg.toLowerCase(java.util.Locale.ROOT);
         ServerPlayerEntity player = source.getPlayer();
@@ -981,20 +1009,18 @@ public class SvcntrlCommands {
         Project.Branch branch = project.getBranch(project.getCurrentBranchName());
         java.util.List<Project.SnapshotMeta> snapshots = category.equals("manual") ? branch.getManualSnapshots() : branch.getAutoSnapshots();
         
-        Project.SnapshotMeta target = null;
-        for (Project.SnapshotMeta meta : snapshots) {
-            if (meta.getId() == id) {
-                target = meta;
-                break;
-            }
-        }
-        
-        if (target == null) {
+        // 2.3: Use stream findFirst instead of raw loop
+        java.util.Optional<Project.SnapshotMeta> targetOpt = snapshots.stream().filter(m -> m.getId() == id).findFirst();
+        if (targetOpt.isEmpty()) {
             source.sendError(Text.translatable("svcntrl.msg.snapshot_not_found"));
             return 0;
         }
         
         java.nio.file.Path snapshotPath = ProjectManager.getInstance().getSnapshotPath(project, branch.getName(), category, id);
+        
+        // 1.1: Remove metadata and persist together in async block so a crash can't cause a ghost/orphan state.
+        // We keep both the metadata removal and file deletion in the same async task so they are atomic from the
+        // perspective of any concurrent reader (the lock prevents that anyway, but this is cleaner).
         if (category.equals("manual")) {
             branch.removeManualSnapshot(id);
         } else {
@@ -1007,9 +1033,17 @@ public class SvcntrlCommands {
                 ProjectManager.getInstance().saveProject(project);
             } catch (java.io.IOException e) {
                 com.svcntrl.SvcntrlMod.LOGGER.error("Failed to delete snapshot file", e);
+                // Re-add the snapshot meta so state is consistent if file delete fails
+                source.getServer().execute(() -> {
+                    if (category.equals("manual")) {
+                        branch.addManualSnapshotDirect(targetOpt.get());
+                    } else {
+                        branch.addAutoSnapshotDirect(targetOpt.get());
+                    }
+                    ProjectManager.getInstance().saveProject(project);
+                });
             }
         });
-        // Project is saved in async block
         source.sendFeedback(() -> Text.literal("Snapshot " + id + " (" + category + ") deleted.").formatted(Formatting.GREEN), false);
         return 1;
     }
@@ -1309,20 +1343,28 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         
-        java.nio.file.Path file = com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid());
-        
+        // 4.5: "no" now means "skip this time only" (does NOT change the persistent preference).
+        // To permanently disable, use /svcntrl autoupload false.
         if ("no".equalsIgnoreCase(choice)) {
-            com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), false);
-            source.sendFeedback(() -> Text.literal("Auto-upload disabled. This file and future exports will stay local.").formatted(Formatting.YELLOW), false);
+            // Consume and discard the pending upload entry AND delete the physical temp file
+            java.nio.file.Path orphan = com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid());
+            if (orphan != null) {
+                com.svcntrl.SvcntrlMod.runAsync(() -> {
+                    try { java.nio.file.Files.deleteIfExists(orphan); } catch (java.io.IOException ignored) {}
+                });
+            }
+            source.sendFeedback(() -> Text.literal("Upload skipped. File removed. Use /svcntrl autoupload false to disable permanently.").formatted(Formatting.YELLOW), false);
             return 1;
         }
 
+        java.nio.file.Path file = com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid());
         if (file == null || !java.nio.file.Files.exists(file)) {
             source.sendError(Text.translatable("svcntrl.msg.no_valid_export_file_pending_f"));
             return 0;
         }
 
-        if ("yes".equalsIgnoreCase(choice)) {
+        // 4.4: Accept "true"/"yes" symmetrically
+        if ("yes".equalsIgnoreCase(choice) || "true".equalsIgnoreCase(choice)) {
             com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), true);
         }
 
