@@ -104,7 +104,7 @@ public class SvcntrlCommands {
                 .then(literal("outline").requires(requirePerm("svcntrl.command.outline"))
                     .executes(ctx -> executeOutline(ctx.getSource())))
 
-                .then(literal("reload").requires(requirePerm("svcntrl.command.reload"))
+                .then(literal("reload").requires(me.lucko.fabric.api.permissions.v0.Permissions.require("svcntrl.command.reload", 3))
                     .executes(ctx -> executeReload(ctx.getSource())))
 
 
@@ -804,8 +804,8 @@ public class SvcntrlCommands {
             ProjectManager.getInstance().saveProject(project);
             source.sendFeedback(() -> Text.translatable("svcntrl.msg.project_saved_snapshot_id").formatted(Formatting.GREEN).append(Text.literal(String.valueOf(snapshotId)).formatted(Formatting.GOLD)), false);
         }, error -> {
-            project.getBranch(branchName).removeManualSnapshot(snapshotId);
-            source.sendError(Text.literal("Failed to save: " + error));
+            rollbackSnapshot(project, branchName, snapshotId, false);
+                    source.sendError(Text.literal("Failed to save: " + error));
         });
 
         return 1;
@@ -839,8 +839,7 @@ public class SvcntrlCommands {
                     ProjectManager.getInstance().saveProject(project);
                 }, err -> {
                     project.setCurrentBranchName(fallbackBranch);
-                    project.getBranch(name).removeAutoSnapshot(autoId);
-                    ProjectManager.getInstance().saveProject(project);
+                    rollbackSnapshot(project, name, autoId, true);
                     source.sendError(Text.literal("Failed to save initial commit (branch switch rolled back): " + err));
                 });
             };
@@ -853,6 +852,7 @@ public class SvcntrlCommands {
                     project.trimAutoSnapshots(currentBranch);
                     createInitialCommit.run();
                 }, err -> {
+                    rollbackSnapshot(project, currentBranch, currentAutoId, true);
                     source.sendError(Text.literal("Failed to save current branch state: " + err));
                 });
             } else {
@@ -937,8 +937,8 @@ public class SvcntrlCommands {
                 project.trimAutoSnapshots(oldBranch);
                 onCheckout.run();
             }, err -> {
-                project.getBranch(oldBranch).removeAutoSnapshot(autoId);
-                source.sendError(Text.literal("Failed to save branch state: " + err));
+                rollbackSnapshot(project, oldBranch, autoId, true);
+                    source.sendError(Text.literal("Failed to save branch state: " + err));
             });
         } else {
             source.sendFeedback(() -> Text.literal("Warning: Checkout executed without saving. Current unsaved changes are lost!").formatted(Formatting.RED, Formatting.BOLD), false);
@@ -975,12 +975,12 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
         if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
 
         Project.Branch branch = project.getBranch(project.getCurrentBranchName());
         java.util.List<Project.SnapshotMeta> snapshots = category.equals("manual") ? branch.getManualSnapshots() : branch.getAutoSnapshots();
         
+        // Project guarantees snapshots are appended in monotonically increasing ID order
         int left = 0, right = snapshots.size() - 1;
         boolean found = false;
         while (left <= right) {
@@ -1126,8 +1126,8 @@ public class SvcntrlCommands {
                     source.sendError(Text.translatable("svcntrl.msg.failed_to_restore_snapshot_mis"));
                 }
             }, err -> {
-                project.getBranch(currentBranch).removeAutoSnapshot(autoId);
-                source.sendError(Text.literal("Backup failed: " + err + ". Restore cancelled."));
+                rollbackSnapshot(project, currentBranch, autoId, true);
+                    source.sendError(Text.literal("Backup failed: " + err + ". Restore cancelled."));
             });
         } else {
             boolean success = AreaSerializer.restoreArea(player, world, project, targetBranch, category, id, excludeIntersections, null, null);
@@ -1165,8 +1165,8 @@ public class SvcntrlCommands {
                     source.sendError(Text.translatable("svcntrl.msg.failed_to_apply_patch_snapshot"));
                 }
             }, err -> {
-                project.getBranch(branchName).removeAutoSnapshot(autoId);
-                source.sendError(Text.literal("Failed to save: " + err));
+                rollbackSnapshot(project, branchName, autoId, true);
+                    source.sendError(Text.literal("Failed to save: " + err));
             });
         } else {
             boolean success = AreaSerializer.restorePatchArea(player, world, project, branchName, category, targetId, branchName, category, baseId, excludeIntersections, null, null);
@@ -1209,9 +1209,8 @@ public class SvcntrlCommands {
                     source.sendError(Text.translatable("svcntrl.msg.failed_to_apply_patch_snapshot"));
                 }
             }, err -> {
-                project.getBranch(currentBranch).removeAutoSnapshot(autoId);
-                ProjectManager.getInstance().saveProject(project);
-                source.sendError(Text.literal("Failed to auto-save, cancelling patch: " + err));
+                rollbackSnapshot(project, currentBranch, autoId, true);
+                    source.sendError(Text.literal("Failed to auto-save, cancelling patch: " + err));
             });
         } else {
             boolean success = AreaSerializer.restorePatchArea(player, world, project, targetBranch, category, targetId, baseBranch, category, baseId, excludeIntersections, null, null);
@@ -1370,7 +1369,7 @@ public class SvcntrlCommands {
     }
 
     private static java.util.function.Predicate<ServerCommandSource> requirePerm(String node) {
-        return me.lucko.fabric.api.permissions.v0.Permissions.require(node, 2);
+        return me.lucko.fabric.api.permissions.v0.Permissions.require(node, 0);
     }
 
     private static boolean hasAdminBypass(ServerCommandSource source) {
@@ -1383,6 +1382,17 @@ public class SvcntrlCommands {
         if (player == null) return false;
         com.svcntrl.data.Project p = com.svcntrl.data.ProjectManager.getInstance().getActiveProject(player.getUuid());
         return p != null && p.getOwnerUuid().equals(player.getUuid());
+    }
+
+    
+    private static void rollbackSnapshot(com.svcntrl.data.Project project, String branchName, int id, boolean auto) {
+        if (project == null || branchName == null) return;
+        com.svcntrl.data.Project.Branch branch = project.getBranch(branchName);
+        if (branch != null) {
+            if (auto) branch.removeAutoSnapshot(id);
+            else branch.removeManualSnapshot(id);
+            com.svcntrl.data.ProjectManager.getInstance().saveProject(project);
+        }
     }
 
     private static void resyncCommands(ServerPlayerEntity player) {

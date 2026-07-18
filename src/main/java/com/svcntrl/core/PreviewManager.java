@@ -174,6 +174,31 @@ public class PreviewManager {
             });
         });
     }
+    
+    public void tick(net.minecraft.server.MinecraftServer server) {
+        if (!hasAnyPreviews()) return;
+        
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            net.minecraft.util.math.Box bounds = previewBoundingBoxes.get(player.getUuid());
+            if (bounds != null) {
+                List<Entity> entities = ((net.minecraft.server.world.ServerWorld)player.getWorld()).getOtherEntities(null, bounds);
+                if (!entities.isEmpty()) {
+                    int[] idsToHide = entities.stream()
+                        .filter(e -> !(e instanceof net.minecraft.server.network.ServerPlayerEntity) && !isEntityHidden(player, e))
+                        .mapToInt(Entity::getId)
+                        .toArray();
+                    
+                    if (idsToHide.length > 0) {
+                        java.util.Set<Integer> hiddenSet = activePreviewEntities.get(player.getUuid());
+                        if (hiddenSet != null) {
+                            for (int id : idsToHide) hiddenSet.add(id);
+                        }
+                        player.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket(idsToHide));
+                    }
+                }
+            }
+        }
+    }
 
     public void stopPreview(ServerPlayerEntity player) {
         stopPreview(player, true);

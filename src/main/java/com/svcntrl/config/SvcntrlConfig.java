@@ -29,6 +29,7 @@ public class SvcntrlConfig {
     };
     public boolean autoSaveOnBranchSwitch = true;
     public boolean autoSaveOnRestore = true;
+    public int maxAutoSnapshots = 10;
 
     private static SvcntrlConfig instance = new SvcntrlConfig();
 
@@ -54,6 +55,7 @@ public class SvcntrlConfig {
                     if (loaded.taskBudgetNs < 100_000L) loaded.taskBudgetNs = 100_000L;
                     if (loaded.taskBudgetNs > 50_000_000L) loaded.taskBudgetNs = 50_000_000L;
                     
+                    if (loaded.maxAutoSnapshots <= 0) loaded.maxAutoSnapshots = 10;
                     if (loaded.raycastParticlePool == null || loaded.raycastParticlePool.length == 0) {
                         loaded.raycastParticlePool = new SvcntrlConfig().raycastParticlePool;
                     }

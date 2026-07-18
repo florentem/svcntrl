@@ -77,6 +77,7 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             TaskScheduler.getInstance().tick();
             UXManager.getInstance().tick(server);
+            PreviewManager.getInstance().tick(server);
             PendingCreateManager.getInstance().tick(server);
             com.svcntrl.core.ExportManager.tick();
         });
@@ -152,6 +153,12 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
             if (world.isClient()) return ActionResult.PASS;
             if (handleRaycastSelection(player)) return ActionResult.FAIL;
 
+            if (!player.isSpectator() && hand == net.minecraft.util.Hand.MAIN_HAND) {
+                if (PendingCreateManager.getInstance().handleLeftClick((net.minecraft.server.network.ServerPlayerEntity) player, pos)) {
+                    return ActionResult.FAIL;
+                }
+            }
+
             if (PreviewManager.getInstance().hasPreview(player.getUuid())) {
                 PreviewManager.getInstance().resendBlock((net.minecraft.server.network.ServerPlayerEntity) player, pos);
                 return ActionResult.FAIL;
@@ -162,10 +169,6 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
             }
             
             if (isPosLocked(world, pos)) {
-                return ActionResult.FAIL;
-            }
-            
-            if (PendingCreateManager.getInstance().handleLeftClick((net.minecraft.server.network.ServerPlayerEntity) player, pos)) {
                 return ActionResult.FAIL;
             }
             return ActionResult.PASS;

@@ -75,6 +75,13 @@ public class UXManager {
         String worldId = player.getWorld().getRegistryKey().getValue().toString();
         for (Project project : ProjectManager.getInstance().getAllProjects()) {
             if (!project.getWorldId().equals(worldId)) continue;
+            
+            // Fast AABB distance check to avoid instantiating Box for distant projects
+            double dx = Math.max(0, Math.max(project.getMin().getX() - cameraPos.x, cameraPos.x - (project.getMax().getX() + 1.0)));
+            double dy = Math.max(0, Math.max(project.getMin().getY() - cameraPos.y, cameraPos.y - (project.getMax().getY() + 1.0)));
+            double dz = Math.max(0, Math.max(project.getMin().getZ() - cameraPos.z, cameraPos.z - (project.getMax().getZ() + 1.0)));
+            if (dx * dx + dy * dy + dz * dz > 10000.0) continue; // Ray length is 100, squared is 10000
+
             net.minecraft.util.math.Box box = new net.minecraft.util.math.Box(
                 project.getMin().getX(), project.getMin().getY(), project.getMin().getZ(),
                 project.getMax().getX() + 1.0, project.getMax().getY() + 1.0, project.getMax().getZ() + 1.0

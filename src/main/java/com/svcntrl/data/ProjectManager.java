@@ -111,7 +111,11 @@ public class ProjectManager {
                         try (java.util.stream.Stream<Path> walk = java.nio.file.Files.walk(projectDir)) {
                             walk.sorted(java.util.Comparator.reverseOrder())
                                 .map(Path::toFile)
-                                .forEach(java.io.File::delete);
+                                .forEach(f -> {
+                                    if (!f.delete()) {
+                                        com.svcntrl.SvcntrlMod.LOGGER.error("Failed to delete file: {}", f.getAbsolutePath());
+                                    }
+                                });
                         }
                     } catch (Throwable e) {
                         com.svcntrl.SvcntrlMod.LOGGER.error("Failed to delete project directory: {}", projectDir, e);

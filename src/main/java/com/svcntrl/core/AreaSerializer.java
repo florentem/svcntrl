@@ -195,34 +195,37 @@ public class AreaSerializer {
                 NbtList entitiesToSpawn = new NbtList();
                 NbtList entitiesToRemove = new NbtList();
                 
-                // Very basic diff: compare NBT excluding UUID and Pos
-                java.util.Set<NbtCompound> baseEntitiesSet = new java.util.HashSet<>();
+                // Smart diff: compare by type and relative position
+                java.util.function.Function<NbtCompound, String> getEntityHash = (nbt) -> {
+                    String id = nbt.getString("id", "");
+                    double rx = nbt.getDouble("svcntrl_RelX", 0);
+                    double ry = nbt.getDouble("svcntrl_RelY", 0);
+                    double rz = nbt.getDouble("svcntrl_RelZ", 0);
+                    // Round to 1 decimal place to tolerate tiny floating point tick changes
+                    return id + "|" + Math.round(rx * 10) + "|" + Math.round(ry * 10) + "|" + Math.round(rz * 10);
+                };
+
+                java.util.Set<String> baseEntitiesSet = new java.util.HashSet<>();
                 for (int i = 0; i < bEntities.size(); i++) {
-                    NbtCompound be = bEntities.getCompoundOrEmpty(i).copy();
-                    be.remove("UUID");
-                    baseEntitiesSet.add(be);
+                    baseEntitiesSet.add(getEntityHash.apply(bEntities.getCompoundOrEmpty(i)));
                 }
 
-                java.util.Set<NbtCompound> targetEntitiesSet = new java.util.HashSet<>();
+                java.util.Set<String> targetEntitiesSet = new java.util.HashSet<>();
                 for (int i = 0; i < tEntities.size(); i++) {
-                    NbtCompound te = tEntities.getCompoundOrEmpty(i).copy();
-                    te.remove("UUID");
-                    targetEntitiesSet.add(te);
+                    targetEntitiesSet.add(getEntityHash.apply(tEntities.getCompoundOrEmpty(i)));
                 }
                 
                 for (int i = 0; i < tEntities.size(); i++) {
-                    NbtCompound te = tEntities.getCompoundOrEmpty(i).copy();
-                    te.remove("UUID");
-                    if (!baseEntitiesSet.contains(te)) {
-                        entitiesToSpawn.add(tEntities.getCompoundOrEmpty(i));
+                    NbtCompound te = tEntities.getCompoundOrEmpty(i);
+                    if (!baseEntitiesSet.contains(getEntityHash.apply(te))) {
+                        entitiesToSpawn.add(te);
                     }
                 }
                 
                 for (int i = 0; i < bEntities.size(); i++) {
-                    NbtCompound be = bEntities.getCompoundOrEmpty(i).copy();
-                    be.remove("UUID");
-                    if (!targetEntitiesSet.contains(be)) {
-                        entitiesToRemove.add(bEntities.getCompoundOrEmpty(i));
+                    NbtCompound be = bEntities.getCompoundOrEmpty(i);
+                    if (!targetEntitiesSet.contains(getEntityHash.apply(be))) {
+                        entitiesToRemove.add(be);
                     }
                 }
 

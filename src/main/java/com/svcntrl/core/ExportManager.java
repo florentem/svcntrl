@@ -662,12 +662,30 @@ public class ExportManager {
         region.putLongArray("BlockStates", packed);
         
         region.put("TileEntities", outBEs);
-        // For diff entities, we just include all target entities because Litematica format cannot encode "deleted" entities.
+        // For diff entities, we filter out entities that are identical in the base snapshot.
+        // Litematica format cannot encode "deleted" entities, but we can avoid exporting unmodified ones.
         NbtList targetEntities = targetRoot.getListOrEmpty("Entities");
+        NbtList baseEntities = baseRoot.getListOrEmpty("Entities");
         NbtList entitiesOut = new NbtList();
+
+        java.util.function.Function<NbtCompound, String> getEntityHash = (nbt) -> {
+            String id = nbt.getString("id", "");
+            double rx = nbt.getDouble("svcntrl_RelX", 0);
+            double ry = nbt.getDouble("svcntrl_RelY", 0);
+            double rz = nbt.getDouble("svcntrl_RelZ", 0);
+            return id + "|" + Math.round(rx * 10) + "|" + Math.round(ry * 10) + "|" + Math.round(rz * 10);
+        };
+
+        java.util.Set<String> baseEntitiesSet = new java.util.HashSet<>();
+        for (int i = 0; i < baseEntities.size(); i++) {
+            baseEntitiesSet.add(getEntityHash.apply(baseEntities.getCompoundOrEmpty(i)));
+        }
 
         for (int i = 0; i < targetEntities.size(); i++) {
             NbtCompound targetEnt = targetEntities.getCompoundOrEmpty(i);
+            if (baseEntitiesSet.contains(getEntityHash.apply(targetEnt))) {
+                continue; // Unmodified entity, skip exporting it
+            }
             NbtCompound entityNbt = targetEnt.copy();
             double relX = entityNbt.getDouble("svcntrl_RelX", 0.0);
             double relY = entityNbt.getDouble("svcntrl_RelY", 0.0);

@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(net.minecraft.server.network.ServerCommonNetworkHandler.class)
-public class ServerPlayNetworkHandlerMixin {
+public class ServerCommonNetworkHandlerMixin {
     @Inject(method = "sendPacket(Lnet/minecraft/network/packet/Packet;)V", at = @At("HEAD"), cancellable = true)
     private void onSendPacketHead(Packet<?> packet, CallbackInfo ci) {
         if (!PreviewManager.getInstance().hasAnyPreviews()) return;
