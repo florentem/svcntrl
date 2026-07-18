@@ -37,7 +37,7 @@ public class SvcntrlCommands {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess) {
         dispatcher.register(literal("svcntrl")
                 // /svcntrl upload
-                .then(literal("upload").requires(s -> s.getPlayer() != null)
+                .then(literal("upload").requires(s -> s.getPlayer() != null && requirePerm("svcntrl.command.export").test(s))
                     .then(literal("always").executes(ctx -> executeUpload(ctx.getSource(), "always")))
                     .then(literal("never").executes(ctx -> executeUpload(ctx.getSource(), "never")))
                     .then(literal("reset").executes(ctx -> executeUpload(ctx.getSource(), "reset")))
@@ -60,46 +60,41 @@ public class SvcntrlCommands {
                             .executes(ctx -> executeRemoveProject(ctx.getSource(), StringArgumentType.getString(ctx, "name"), false))
                             .then(literal("force")
                                 .executes(ctx -> executeRemoveProject(ctx.getSource(), StringArgumentType.getString(ctx, "name"), true)))))
-                    .then(literal("trust").requires(requirePerm("svcntrl.command.project.trust"))
+                    .then(literal("trust").requires(s -> requirePerm("svcntrl.command.project.trust").test(s) && isOwnerOrAdmin(s))
                         .then(argument("player", StringArgumentType.word())
                             .suggests((ctx, builder) -> net.minecraft.command.CommandSource.suggestMatching(ctx.getSource().getServer().getPlayerNames(), builder))
-                            .executes(ctx -> executeTrust(ctx.getSource(), StringArgumentType.getString(ctx, "player")))))
-                    .then(literal("untrust").requires(requirePerm("svcntrl.command.project.untrust"))
+                            .executes(ctx -> executeTrust(ctx.getSource(), StringArgumentType.getString(ctx, "player"), true))))
+                    .then(literal("untrust").requires(s -> requirePerm("svcntrl.command.project.untrust").test(s) && isOwnerOrAdmin(s))
                         .then(argument("player", StringArgumentType.word())
-                            .suggests((ctx, builder) -> suggestMembers(ctx, builder))
-                            .executes(ctx -> executeUntrust(ctx.getSource(), StringArgumentType.getString(ctx, "player")))))
+                            .suggests(SvcntrlCommands::suggestMembers)
+                            .executes(ctx -> executeTrust(ctx.getSource(), StringArgumentType.getString(ctx, "player"), false))))
                     .then(literal("tp").requires(requirePerm("svcntrl.command.project.tp"))
-                        .executes(ctx -> executeTpActive(ctx.getSource()))
                         .then(argument("name", StringArgumentType.word())
-                            .suggests((ctx, builder) -> suggestProjects(ctx, builder))
-                            .executes(ctx -> executeTp(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))
+                            .suggests(SvcntrlCommands::suggestProjects)
+                            .executes(ctx -> executeTeleport(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))
                     .then(literal("select").requires(requirePerm("svcntrl.command.project.select"))
                         .then(argument("name", StringArgumentType.word())
-                            .suggests((ctx, builder) -> suggestProjects(ctx, builder))
+                            .suggests(SvcntrlCommands::suggestProjects)
                             .executes(ctx -> executeSelect(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))
-                    .then(literal("raycast").requires(requirePerm("svcntrl.command.project.select"))
+                    .then(literal("raycast").requires(requirePerm("svcntrl.command.project.raycast"))
                         .executes(ctx -> executeSelectRaycast(ctx.getSource())))
                 )
 
                 // /svcntrl branch ...
                 .then(literal("branch")
                     .then(literal("list").requires(requirePerm("svcntrl.command.branch.list"))
-                        .executes(ctx -> executeBranchList(ctx.getSource())))
+                        .executes(ctx -> executeBranchList(ctx.getSource(), 1)))
                     .then(literal("create").requires(requirePerm("svcntrl.command.branch.create"))
                         .then(withNoSave(argument("name", StringArgumentType.word()),
                             ctx -> executeBranchCreate(ctx.getSource(), StringArgumentType.getString(ctx, "name"), false),
-                            ctx -> executeBranchCreate(ctx.getSource(), StringArgumentType.getString(ctx, "name"), true)
-                        ))
-                    )
+                            ctx -> executeBranchCreate(ctx.getSource(), StringArgumentType.getString(ctx, "name"), true))))
                     .then(literal("checkout").requires(requirePerm("svcntrl.command.branch.checkout"))
-                        .then(withNoSave(argument("name", StringArgumentType.word()).suggests((ctx, builder) -> suggestBranches(ctx, builder)),
+                        .then(withNoSave(argument("name", StringArgumentType.word()).suggests(SvcntrlCommands::suggestBranches),
                             ctx -> executeBranchCheckout(ctx.getSource(), StringArgumentType.getString(ctx, "name"), false),
-                            ctx -> executeBranchCheckout(ctx.getSource(), StringArgumentType.getString(ctx, "name"), true)
-                        ))
-                    )
-                    .then(literal("delete").requires(requirePerm("svcntrl.command.branch.delete"))
+                            ctx -> executeBranchCheckout(ctx.getSource(), StringArgumentType.getString(ctx, "name"), true))))
+                    .then(literal("delete").requires(s -> requirePerm("svcntrl.command.branch.delete").test(s) && isOwnerOrAdmin(s))
                         .then(argument("name", StringArgumentType.word())
-                            .suggests((ctx, builder) -> suggestBranches(ctx, builder))
+                            .suggests(SvcntrlCommands::suggestBranches)
                             .executes(ctx -> executeBranchDelete(ctx.getSource(), StringArgumentType.getString(ctx, "name"), false))
                             .then(literal("force")
                                 .executes(ctx -> executeBranchDelete(ctx.getSource(), StringArgumentType.getString(ctx, "name"), true)))))
@@ -671,16 +666,7 @@ public class SvcntrlCommands {
         return 1;
     }
 
-    private static int executeTpActive(ServerCommandSource source) {
-        ServerPlayerEntity player = source.getPlayer();
-        if (player == null) return 0;
-        Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project_select_one_o")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
-        return executeTp(source, project.getName());
-    }
-
-    private static int executeTp(ServerCommandSource source, String name) {
+    private static int executeTeleport(ServerCommandSource source, String name) {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getProject(name);
@@ -707,8 +693,6 @@ public class SvcntrlCommands {
         if (project == null) { source.sendError(Text.translatable("svcntrl.msg.project_not_found")); return 0; }
         if (!project.isOwner(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.only_the_project_owner_or_admi")); return 0; }
         if (!force) {
-            // 3.8: Use sendFeedback (not sendError) for a confirmation prompt — it is not an error
-            // 1.4: Return 1 (not 0) — the command succeeded, it's just waiting for confirmation
             source.sendFeedback(() -> Text.literal("Are you sure? Run: /svcntrl project remove " + name + " force").formatted(Formatting.YELLOW), false);
             return 1;
         }
@@ -738,6 +722,7 @@ public class SvcntrlCommands {
         if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         ProjectManager.getInstance().setActiveProject(player.getUuid(), name);
         source.sendFeedback(() -> Text.translatable("svcntrl.msg.active_project_set_to").formatted(Formatting.GREEN).append(Text.literal(name).formatted(Formatting.GOLD)), false);
+        resyncCommands(player);
         return 1;
     }
 
@@ -745,7 +730,6 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        // 1.5: Always check access, even when project is null (null means no active project, not a bypass)
         if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
         if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         boolean active = UXManager.getInstance().toggleOutline(player.getUuid());
@@ -753,43 +737,33 @@ public class SvcntrlCommands {
         return 1;
     }
 
-    private static int executeTrust(ServerCommandSource source, String playerName) {
+    private static int executeTrust(ServerCommandSource source, String playerName, boolean add) {
         ServerPlayerEntity sender = source.getPlayer();
         if (sender == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(sender.getUuid());
         if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (!project.isOwner(sender.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.only_the_owner_or_admin_can_tr")); return 0; }
         java.util.Optional<com.mojang.authlib.GameProfile> profileOpt = source.getServer().getUserCache().findByName(playerName);
         if (profileOpt.isEmpty()) { source.sendError(Text.translatable("svcntrl.msg.player_not_found")); return 0; }
         UUID targetUuid = profileOpt.get().getId();
-        if (project.addMember(targetUuid)) {
-            ProjectManager.getInstance().saveProject(project);
-            source.sendFeedback(() -> Text.literal("Added " + playerName + " to project.").formatted(Formatting.GREEN), false);
+        if (add) {
+            if (project.addMember(targetUuid)) {
+                ProjectManager.getInstance().saveProject(project);
+                source.sendFeedback(() -> Text.literal("Added " + playerName + " to project.").formatted(Formatting.GREEN), false);
+            } else {
+                source.sendError(Text.literal(playerName + " is already in the project."));
+            }
         } else {
-            source.sendError(Text.literal(playerName + " is already in the project."));
+            if (project.removeMember(targetUuid)) {
+                ProjectManager.getInstance().saveProject(project);
+                source.sendFeedback(() -> Text.literal("Removed " + playerName + " from project.").formatted(Formatting.GREEN), false);
+            } else {
+                source.sendError(Text.literal(playerName + " is not in the project."));
+            }
         }
         return 1;
     }
 
-    private static int executeUntrust(ServerCommandSource source, String playerName) {
-        ServerPlayerEntity sender = source.getPlayer();
-        if (sender == null) return 0;
-        Project project = ProjectManager.getInstance().getActiveProject(sender.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (!project.isOwner(sender.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.only_the_owner_or_admin_can_un")); return 0; }
-        java.util.Optional<com.mojang.authlib.GameProfile> profileOpt = source.getServer().getUserCache().findByName(playerName);
-        if (profileOpt.isEmpty()) { source.sendError(Text.translatable("svcntrl.msg.player_not_found")); return 0; }
-        UUID targetUuid = profileOpt.get().getId();
-        if (project.removeMember(targetUuid)) {
-            ProjectManager.getInstance().saveProject(project);
-            source.sendFeedback(() -> Text.literal("Removed " + playerName + " from project.").formatted(Formatting.GREEN), false);
-        } else {
-            source.sendError(Text.literal(playerName + " is not in the project."));
-        }
-        return 1;
-    }
-
-    private static int executeBranchList(ServerCommandSource source) {
+    private static int executeBranchList(ServerCommandSource source, int page) {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
@@ -888,6 +862,7 @@ public class SvcntrlCommands {
             source.sendFeedback(() -> Text.literal("Branch '" + name + "' created.").formatted(Formatting.GREEN), false);
             ProjectManager.getInstance().saveProject(project);
         }
+        resyncCommands(player);
         return 1;
     }
 
@@ -907,7 +882,6 @@ public class SvcntrlCommands {
         if (world == null) return 0;
         
         Runnable onCheckout = () -> {
-            // Now restore the latest state from the new branch
             Project.Branch newBranch = project.getBranch(name);
             int restoreId = -1;
             String category = "auto";
@@ -967,13 +941,12 @@ public class SvcntrlCommands {
             source.sendFeedback(() -> Text.literal("Warning: Checkout executed without saving. Current unsaved changes are lost!").formatted(Formatting.RED, Formatting.BOLD), false);
             onCheckout.run();
         }
-        
+        resyncCommands(player);
         return 1;
     }
 
     private static int executeBranchDelete(ServerCommandSource source, String nameArg, boolean force) {
         if (!force) {
-            // 3.8 + 1.4: Use sendFeedback with yellow colour for confirmation prompt, return 1
             source.sendFeedback(() -> Text.literal("Are you sure? Run: /svcntrl branch delete " + nameArg + " force").formatted(Formatting.YELLOW), false);
             return 1;
         }
@@ -984,7 +957,6 @@ public class SvcntrlCommands {
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
         if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
-        if (!project.isOwner(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.only_owner_can_delete_branches")); return 0; }
         if (project.getCurrentBranchName().equals(name)) { source.sendError(Text.translatable("svcntrl.msg.cannot_delete_current_branch")); return 0; }
         if (!project.hasBranch(name)) { source.sendError(Text.translatable("svcntrl.msg.branch_not_found")); return 0; }
         
@@ -992,6 +964,7 @@ public class SvcntrlCommands {
         ProjectManager.getInstance().deleteBranchDir(project, name);
         ProjectManager.getInstance().saveProject(project);
         source.sendFeedback(() -> Text.literal("Branch '" + name + "' deleted.").formatted(Formatting.GREEN), false);
+        resyncCommands(player);
         return 1;
     }
 
@@ -1006,7 +979,6 @@ public class SvcntrlCommands {
         Project.Branch branch = project.getBranch(project.getCurrentBranchName());
         java.util.List<Project.SnapshotMeta> snapshots = category.equals("manual") ? branch.getManualSnapshots() : branch.getAutoSnapshots();
         
-        // 2.3: Use stream findFirst instead of raw loop
         java.util.Optional<Project.SnapshotMeta> targetOpt = snapshots.stream().filter(m -> m.getId() == id).findFirst();
         if (targetOpt.isEmpty()) {
             source.sendError(Text.translatable("svcntrl.msg.snapshot_not_found"));
@@ -1015,9 +987,6 @@ public class SvcntrlCommands {
         
         java.nio.file.Path snapshotPath = ProjectManager.getInstance().getSnapshotPath(project, branch.getName(), category, id);
         
-        // 1.1: Remove metadata and persist together in async block so a crash can't cause a ghost/orphan state.
-        // We keep both the metadata removal and file deletion in the same async task so they are atomic from the
-        // perspective of any concurrent reader (the lock prevents that anyway, but this is cleaner).
         if (category.equals("manual")) {
             branch.removeManualSnapshot(id);
         } else {
@@ -1030,7 +999,6 @@ public class SvcntrlCommands {
                 ProjectManager.getInstance().saveProject(project);
             } catch (java.io.IOException e) {
                 com.svcntrl.SvcntrlMod.LOGGER.error("Failed to delete snapshot file", e);
-                // Re-add the snapshot meta so state is consistent if file delete fails
                 source.getServer().execute(() -> {
                     if (category.equals("manual")) {
                         branch.addManualSnapshotDirect(targetOpt.get());
@@ -1350,6 +1318,7 @@ public class SvcntrlCommands {
             com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), false);
             source.sendFeedback(() -> Text.literal("Auto-upload disabled. Files will stay local.").formatted(Formatting.GREEN), false);
             com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid()); // discard if any
+            resyncCommands(player);
             return 1;
         }
 
@@ -1365,6 +1334,7 @@ public class SvcntrlCommands {
             if (file != null) {
                 source.sendFeedback(() -> Text.literal("Upload skipped. File kept in server 'exports' folder.").formatted(Formatting.YELLOW), false);
             }
+            resyncCommands(player);
             return 1;
         }
 
@@ -1377,6 +1347,7 @@ public class SvcntrlCommands {
         }
 
         source.sendFeedback(() -> Text.literal("Uploading " + file.getFileName().toString() + " to public endpoint...").formatted(Formatting.YELLOW), false);
+        resyncCommands(player);
         com.svcntrl.SvcntrlMod.runAsync(() -> {
             com.svcntrl.core.ExportManager.doActualUpload(file, player);
         });
@@ -1395,5 +1366,19 @@ public class SvcntrlCommands {
 
     private static boolean hasAdminBypass(ServerCommandSource source) {
         return me.lucko.fabric.api.permissions.v0.Permissions.check(source, "svcntrl.admin", 3);
+    }
+
+    private static boolean isOwnerOrAdmin(ServerCommandSource source) {
+        if (hasAdminBypass(source)) return true;
+        ServerPlayerEntity player = source.getPlayer();
+        if (player == null) return false;
+        com.svcntrl.data.Project p = com.svcntrl.data.ProjectManager.getInstance().getActiveProject(player.getUuid());
+        return p != null && p.getOwnerUuid().equals(player.getUuid());
+    }
+
+    private static void resyncCommands(ServerPlayerEntity player) {
+        if (player != null && player.getServer() != null) {
+            player.getServer().getPlayerManager().sendCommandTree(player);
+        }
     }
 }
