@@ -1,5 +1,7 @@
 package com.svcntrl.core;
 
+import com.svcntrl.util.Lang;
+
 import com.svcntrl.SvcntrlMod;
 import com.svcntrl.data.Project;
 import com.svcntrl.data.ProjectManager;
@@ -109,7 +111,8 @@ public class ExportManager {
                 if (now - lastUpdate > 100) {
                     if (player != null && !player.isDisconnected()) {
                         float percent = (float) i / v2Data.length * 100f;
-                        player.sendMessage(net.minecraft.text.Text.literal(String.format("Packing Blocks: %.1f%%", percent)).formatted(net.minecraft.util.Formatting.GREEN), true);
+                        String pct = String.format(java.util.Locale.US, "%.1f", percent);
+                        player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.packing_blocks_progress", pct).formatted(net.minecraft.util.Formatting.GREEN), true);
                     }
                     lastUpdate = now;
                 }
@@ -136,7 +139,7 @@ public class ExportManager {
                 longArray[endArrIndex] = longArray[endArrIndex] >>> j1 << j1 | (value & maxEntryValue) >> endOffset;
             }
         }
-        if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.packing_blocks_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
+        if (player != null && !player.isDisconnected()) player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.packing_blocks_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
         return longArray;
     }
 
@@ -145,7 +148,7 @@ public class ExportManager {
             try {
                 NbtCompound root = AreaSerializer.readSnapshot(project, branchName, category, id);
                 if (root == null) {
-                    player.sendMessage(Text.translatable("svcntrl.msg.snapshot_not_found").formatted(Formatting.RED));
+                    player.sendMessage(Lang.translatable("svcntrl.msg.snapshot_not_found").formatted(Formatting.RED));
                     return;
                 }
 
@@ -159,7 +162,7 @@ public class ExportManager {
                 NbtIo.writeCompressed(litematic, filePath);
 
                 if (com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport && player.getServer().isDedicated()) {
-                    player.sendMessage(Text.translatable("svcntrl.msg.uploading_schematic_to_public").formatted(Formatting.YELLOW), false);
+                    player.sendMessage(Lang.translatable("svcntrl.msg.uploading_schematic_to_public").formatted(Formatting.YELLOW), false);
 
                     com.svcntrl.SvcntrlMod.runAsync(() -> {
                         try {
@@ -172,26 +175,26 @@ public class ExportManager {
                             uploadToTmpfiles(zipPath, player);
                         } catch (Throwable e) {
                             SvcntrlMod.LOGGER.error("Export zip failed", e);
-                            if (player != null && !player.isDisconnected()) player.sendMessage(Text.translatable("svcntrl.msg.failed_to_create_zip_check_log").formatted(Formatting.RED), false);
+                            if (player != null && !player.isDisconnected()) player.sendMessage(Lang.translatable("svcntrl.msg.failed_to_create_zip_check_log").formatted(Formatting.RED), false);
                         }
                     });
                 } else {
-                    player.sendMessage(Text.translatable("svcntrl.msg.export_saved", fileName).formatted(Formatting.GREEN), false);
+                    player.sendMessage(Lang.translatable("svcntrl.msg.export_saved", fileName).formatted(Formatting.GREEN), false);
                 }
 
             } catch (Throwable e) {
                 SvcntrlMod.LOGGER.error("Failed to export", e);
-                player.sendMessage(Text.translatable("svcntrl.msg.error_exporting_snapshot_check").formatted(Formatting.RED));
+                player.sendMessage(Lang.translatable("svcntrl.msg.error_exporting_snapshot_check").formatted(Formatting.RED));
             }
         });
     }
 
     public static void exportProjectFull(Project project, ServerPlayerEntity player) {
-        new Thread(() -> {
+        com.svcntrl.SvcntrlMod.runAsync(() -> {
             try {
                 Path projectDir = ProjectManager.getInstance().getProjectDir(project);
                 if (!Files.exists(projectDir)) {
-                    player.sendMessage(Text.translatable("svcntrl.msg.project_directory_not_found").formatted(Formatting.RED));
+                    player.sendMessage(Lang.translatable("svcntrl.msg.project_directory_not_found").formatted(Formatting.RED));
                     return;
                 }
 
@@ -200,7 +203,7 @@ public class ExportManager {
                 String fileName = project.getName() + "_full.zip";
                 Path zipPath = exportDir.resolve(fileName);
 
-                if (player != null && !player.isDisconnected()) player.sendMessage(Text.translatable("svcntrl.msg.converting_and_packing_full_pr")
+                if (player != null && !player.isDisconnected()) player.sendMessage(Lang.translatable("svcntrl.msg.converting_and_packing_full_pr")
                         .formatted(Formatting.YELLOW), false);
 
                 try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath));
@@ -247,14 +250,14 @@ public class ExportManager {
                         uploadToTmpfiles(zipPath, player);
                     });
                 } else if (player != null) {
-                    player.sendMessage(Text.translatable("svcntrl.msg.export_saved", fileName).formatted(Formatting.GREEN), false);
+                    player.sendMessage(Lang.translatable("svcntrl.msg.export_saved", fileName).formatted(Formatting.GREEN), false);
                 }
 
             } catch (Throwable e) {
                 SvcntrlMod.LOGGER.error("Failed to export full project", e);
-                player.sendMessage(Text.translatable("svcntrl.msg.error_exporting_full_project_c").formatted(Formatting.RED));
+                player.sendMessage(Lang.translatable("svcntrl.msg.error_exporting_full_project_c").formatted(Formatting.RED));
             }
-        }, "Svcntrl-Export-Full").start();
+        });
     }
 
     public static NbtCompound convertToLitematic(NbtCompound root, Project project, String category, int id, ServerPlayerEntity player) {
@@ -326,7 +329,8 @@ public class ExportManager {
                     if (now - lastUpdate > 100) {
                         if (player != null && !player.isDisconnected()) {
                             float percent = (float) i / inBlocks.size() * 100f;
-                            player.sendMessage(net.minecraft.text.Text.literal(String.format("Converting V1 Blocks: %.1f%%", percent)).formatted(net.minecraft.util.Formatting.GREEN), true);
+                            String pct = String.format(java.util.Locale.US, "%.1f", percent);
+                            player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.converting_v1_blocks_progress", pct).formatted(net.minecraft.util.Formatting.GREEN), true);
                         }
                         lastUpdate = now;
                     }
@@ -358,7 +362,7 @@ public class ExportManager {
                     blockEntitiesOut.add(beOut);
                 }
             }
-            if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.converting_v1_blocks_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
+            if (player != null && !player.isDisconnected()) player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.converting_v1_blocks_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
         }
 
         int totalBlocks = 0;
@@ -459,11 +463,11 @@ public class ExportManager {
                 Path basePath = ProjectManager.getInstance().getSnapshotPath(project, baseBranch, baseCategory, baseId);
 
                 if (!Files.exists(targetPath) || !Files.exists(basePath)) {
-                    player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.one_or_both_snapshots_not_foun").formatted(net.minecraft.util.Formatting.RED));
+                    player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.one_or_both_snapshots_not_foun").formatted(net.minecraft.util.Formatting.RED));
                     return;
                 }
 
-                if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.calculating_diff_and_generatin")
+                if (player != null && !player.isDisconnected()) player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.calculating_diff_and_generatin")
                         .formatted(net.minecraft.util.Formatting.YELLOW), false);
 
                 NbtCompound targetRoot = net.minecraft.nbt.NbtIo.readCompressed(targetPath, net.minecraft.nbt.NbtSizeTracker.of(512L * 1024L * 1024L));
@@ -481,7 +485,7 @@ public class ExportManager {
                 net.minecraft.nbt.NbtIo.writeCompressed(litematic, filePath);
 
                 if (com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport && player.getServer().isDedicated()) {
-                    player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.uploading_diff_schematic_pleas")
+                    player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.uploading_diff_schematic_pleas")
                             .formatted(net.minecraft.util.Formatting.YELLOW), false);
 
                     com.svcntrl.SvcntrlMod.runAsync(() -> {
@@ -495,16 +499,16 @@ public class ExportManager {
                             uploadToTmpfiles(zipPath, player);
                         } catch (Throwable e) {
                             SvcntrlMod.LOGGER.error("Diff zip failed", e);
-                            if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_create_zip_check_log").formatted(net.minecraft.util.Formatting.RED), false);
+                            if (player != null && !player.isDisconnected()) player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.failed_to_create_zip_check_log").formatted(net.minecraft.util.Formatting.RED), false);
                         }
                     });
                 } else {
-                    player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.diff_export_saved", fileName).formatted(net.minecraft.util.Formatting.GREEN), false);
+                    player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.diff_export_saved", fileName).formatted(net.minecraft.util.Formatting.GREEN), false);
                 }
 
             } catch (Throwable e) {
                 SvcntrlMod.LOGGER.error("Failed to export diff", e);
-                player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.error_exporting_diff_check_ser").formatted(net.minecraft.util.Formatting.RED));
+                player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.error_exporting_diff_check_ser").formatted(net.minecraft.util.Formatting.RED));
             }
         });
     }
@@ -514,7 +518,7 @@ public class ExportManager {
         boolean isV2Base = baseRoot.contains("Version") && baseRoot.getInt("Version", 1) == 2;
         
         if (!isV2Target || !isV2Base) {
-            if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.diff_export_currently_only_sup").formatted(net.minecraft.util.Formatting.RED), false);
+            if (player != null && !player.isDisconnected()) player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.diff_export_currently_only_sup").formatted(net.minecraft.util.Formatting.RED), false);
             return null;
         }
 
@@ -524,7 +528,7 @@ public class ExportManager {
             targetRoot.getInt("MaxY", 0) != baseRoot.getInt("MaxY", 0) ||
             targetRoot.getInt("MinZ", 0) != baseRoot.getInt("MinZ", 0) ||
             targetRoot.getInt("MaxZ", 0) != baseRoot.getInt("MaxZ", 0)) {
-            if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.export_diff_dims").formatted(net.minecraft.util.Formatting.RED), false);
+            if (player != null && !player.isDisconnected()) player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.export_diff_dims").formatted(net.minecraft.util.Formatting.RED), false);
             return null;
         }
 
@@ -720,7 +724,7 @@ public class ExportManager {
     public static void uploadToTmpfiles(Path zipPath, net.minecraft.server.network.ServerPlayerEntity player) {
         if (player == null) return;
         
-        player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.export_saved_server", zipPath.getFileName().toString()).formatted(net.minecraft.util.Formatting.GREEN), false);
+        player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.export_saved_server", zipPath.getFileName().toString()).formatted(net.minecraft.util.Formatting.GREEN), false);
         
         if (!com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport || !player.getServer().isDedicated()) {
             return;
@@ -728,7 +732,7 @@ public class ExportManager {
 
         Boolean pref = com.svcntrl.data.ProjectManager.getInstance().getAutoUploadPref(player.getUuid());
         if (Boolean.TRUE.equals(pref)) {
-            player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.auto_uploading", zipPath.getFileName().toString()).formatted(net.minecraft.util.Formatting.YELLOW), false);
+            player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.auto_uploading", zipPath.getFileName().toString()).formatted(net.minecraft.util.Formatting.YELLOW), false);
             com.svcntrl.SvcntrlMod.runAsync(() -> doActualUpload(zipPath, player));
             return;
         } else if (Boolean.FALSE.equals(pref)) {
@@ -738,35 +742,35 @@ public class ExportManager {
         long expiry = System.currentTimeMillis() + 60_000; // 60 seconds
         pendingUploads.put(player.getUuid(), new PendingUpload(zipPath, expiry));
 
-        net.minecraft.text.MutableText uploadPrompt = net.minecraft.text.Text.translatable("svcntrl.msg.do_you_want_to_upload_this_fil")
+        net.minecraft.text.MutableText uploadPrompt = com.svcntrl.util.Lang.translatable("svcntrl.msg.do_you_want_to_upload_this_fil")
                 .formatted(net.minecraft.util.Formatting.YELLOW)
                 .append(" ")
-                .append(net.minecraft.text.Text.literal("[YES]")
+                .append(com.svcntrl.util.Lang.translatable("svcntrl.msg.upload_prompt.yes")
                         .formatted(net.minecraft.util.Formatting.AQUA, net.minecraft.util.Formatting.BOLD)
                         .styled(style -> style
                                 .withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl upload yes"))
-                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.translatable("svcntrl.msg.hover_upload_once")))))
+                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(com.svcntrl.util.Lang.translatable("svcntrl.msg.hover_upload_once")))))
                 .append(" ")
-                .append(net.minecraft.text.Text.literal("[ALWAYS]")
+                .append(com.svcntrl.util.Lang.translatable("svcntrl.msg.upload_prompt.always")
                         .formatted(net.minecraft.util.Formatting.GREEN, net.minecraft.util.Formatting.BOLD)
                         .styled(style -> style
                                 .withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl upload always"))
-                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.translatable("svcntrl.msg.hover_upload_always")))))
+                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(com.svcntrl.util.Lang.translatable("svcntrl.msg.hover_upload_always")))))
                 .append(" ")
-                .append(net.minecraft.text.Text.literal("[NO]")
+                .append(com.svcntrl.util.Lang.translatable("svcntrl.msg.upload_prompt.no")
                         .formatted(net.minecraft.util.Formatting.RED, net.minecraft.util.Formatting.BOLD)
                         .styled(style -> style
                                 .withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl upload no"))
-                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.translatable("svcntrl.msg.hover_upload_skip")))))
+                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(com.svcntrl.util.Lang.translatable("svcntrl.msg.hover_upload_skip")))))
                 .append(" ")
-                .append(net.minecraft.text.Text.literal("[NEVER]")
+                .append(com.svcntrl.util.Lang.translatable("svcntrl.msg.upload_prompt.never")
                         .formatted(net.minecraft.util.Formatting.DARK_RED, net.minecraft.util.Formatting.BOLD)
                         .styled(style -> style
                                 .withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl upload never"))
-                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(net.minecraft.text.Text.translatable("svcntrl.msg.hover_upload_never")))));
+                                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(com.svcntrl.util.Lang.translatable("svcntrl.msg.hover_upload_never")))));
 
         player.sendMessage(uploadPrompt, false);
-        player.sendMessage(net.minecraft.text.Text.literal("(You can change this later with /svcntrl upload <always/never/reset>)").formatted(net.minecraft.util.Formatting.GRAY), false);
+        player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.upload_prompt.hint").formatted(net.minecraft.util.Formatting.GRAY), false);
     }
 
     public static void doActualUpload(Path zipPath, net.minecraft.server.network.ServerPlayerEntity player) {
@@ -825,9 +829,9 @@ public class ExportManager {
                 if (dlUrl != null) {
                     final String finalDlUrl = dlUrl;
                     if (player != null && !player.isDisconnected()) {
-                        player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.export_uploaded_download_link")
+                        player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.export_uploaded_download_link")
                                 .formatted(net.minecraft.util.Formatting.GREEN)
-                                .append(net.minecraft.text.Text.translatable("svcntrl.msg.download")
+                                .append(com.svcntrl.util.Lang.translatable("svcntrl.msg.download")
                                         .formatted(net.minecraft.util.Formatting.GOLD)
                                         .styled(s -> {
                                             try {
@@ -836,7 +840,7 @@ public class ExportManager {
                                                 return s;
                                             }
                                         })), false);
-                        player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.security_notice_this_link_is_p").formatted(net.minecraft.util.Formatting.GRAY), false);
+                        player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.security_notice_this_link_is_p").formatted(net.minecraft.util.Formatting.GRAY), false);
                     }
                     try {
                         Files.deleteIfExists(zipPath);
@@ -845,14 +849,14 @@ public class ExportManager {
                         Files.deleteIfExists(zipPath.getParent().resolve(base));
                     } catch (Exception ignored) {}
                 } else {
-                    if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_upload_unrecognized").formatted(net.minecraft.util.Formatting.RED), false);
+                    if (player != null && !player.isDisconnected()) player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.failed_to_upload_unrecognized").formatted(net.minecraft.util.Formatting.RED), false);
                 }
             } else {
-                if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.upload_failed_http", response.statusCode()).formatted(net.minecraft.util.Formatting.RED), false);
+                if (player != null && !player.isDisconnected()) player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.upload_failed_http", response.statusCode()).formatted(net.minecraft.util.Formatting.RED), false);
             }
         } catch (Exception e) {
             com.svcntrl.SvcntrlMod.LOGGER.error("Failed to upload export to tmpfiles.org", e);
-            if (player != null && !player.isDisconnected()) player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.upload_error", e.getMessage()).formatted(net.minecraft.util.Formatting.RED), false);
+            if (player != null && !player.isDisconnected()) player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.upload_error", e.getMessage()).formatted(net.minecraft.util.Formatting.RED), false);
         } finally {
             if (tempFile != null) {
                 try {

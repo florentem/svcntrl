@@ -1,5 +1,7 @@
 package com.svcntrl.core;
 
+import com.svcntrl.util.Lang;
+
 import com.svcntrl.data.Project;
 import com.svcntrl.data.ProjectManager;
 import com.svcntrl.config.SvcntrlConfig;
@@ -73,7 +75,7 @@ public class UXManager {
         long minInsideVolume = Long.MAX_VALUE;
 
         String worldId = player.getWorld().getRegistryKey().getValue().toString();
-        for (Project project : ProjectManager.getInstance().getAllProjects()) {
+        for (Project project : ProjectManager.getInstance().getProjectsNearPos(worldId, player.getBlockPos(), 128)) {
             if (!project.getWorldId().equals(worldId)) continue;
             
             // Fast AABB distance check to avoid instantiating Box for distant projects
@@ -118,20 +120,23 @@ public class UXManager {
         if (tickCounter % 10 == 0) {
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                 if (PreviewManager.getInstance().hasPreview(player.getUuid())) {
-                    player.sendMessage(Text.translatable("svcntrl.msg.you_are_in_preview_mode_type_s").formatted(Formatting.AQUA, Formatting.BOLD), true);
+                    player.sendMessage(Lang.translatable("svcntrl.msg.you_are_in_preview_mode_type_s").formatted(Formatting.AQUA, Formatting.BOLD), true);
                 }
             }
         }
 
         // Raycast selection checking (every 2 ticks = 0.1 sec)
         if (tickCounter % 2 == 0) {
+            boolean isBusy = TaskScheduler.getInstance().hasActiveTasks();
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                 if (raycastPlayers.contains(player.getUuid())) {
                     Project lookedAt = getProjectLookingAt(player);
-                    if (lookedAt != null) {
-                        player.sendMessage(Text.translatable("svcntrl.msg.looking_at").formatted(Formatting.GRAY).append(Text.literal(lookedAt.getName()).formatted(Formatting.AQUA, Formatting.BOLD)).append(Text.translatable("svcntrl.msg.click_to_select").formatted(Formatting.YELLOW)), true);
-                    } else {
-                        player.sendMessage(Text.translatable("svcntrl.msg.looking_at").formatted(Formatting.GRAY).append(Text.translatable("svcntrl.msg.none").formatted(Formatting.DARK_GRAY)), true);
+                    if (!isBusy) {
+                        if (lookedAt != null) {
+                            player.sendMessage(Lang.translatable("svcntrl.msg.looking_at").formatted(Formatting.GRAY).append(Text.literal(lookedAt.getName()).formatted(Formatting.AQUA, Formatting.BOLD)).append(Lang.translatable("svcntrl.msg.click_to_select").formatted(Formatting.YELLOW)), true);
+                        } else {
+                            player.sendMessage(Lang.translatable("svcntrl.msg.looking_at").formatted(Formatting.GRAY).append(Lang.translatable("svcntrl.msg.none").formatted(Formatting.DARK_GRAY)), true);
+                        }
                     }
                 }
             }
@@ -147,7 +152,7 @@ public class UXManager {
                 if (raycasting) {
                     String[] pool = SvcntrlConfig.getInstance().raycastParticlePool;
                     String worldId = player.getWorld().getRegistryKey().getValue().toString();
-                    for (Project project : ProjectManager.getInstance().getAllProjects()) {
+                    for (Project project : ProjectManager.getInstance().getProjectsNearPos(worldId, player.getBlockPos(), 128)) {
                         if (!project.getWorldId().equals(worldId)) continue;
                         if (!project.contains(player.getBlockPos()) && player.getBlockPos().getSquaredDistance(new net.minecraft.util.math.BlockPos((project.getMin().getX() + project.getMax().getX()) / 2, (project.getMin().getY() + project.getMax().getY()) / 2, (project.getMin().getZ() + project.getMax().getZ()) / 2)) > 16384) continue;
                         int index = (project.getName().hashCode() & 0x7fffffff) % pool.length;

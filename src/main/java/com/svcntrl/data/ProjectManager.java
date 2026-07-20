@@ -25,6 +25,66 @@ public class ProjectManager {
     private final Map<UUID, Boolean> autoUploadPrefs = new ConcurrentHashMap<>();
     private final Set<String> deletingProjects = ConcurrentHashMap.newKeySet();
 
+    private final ConcurrentHashMap<String, ConcurrentHashMap<Long, Set<Project>>> projectGrid = new ConcurrentHashMap<>();
+
+    private long getRegionHash(int rx, int rz) {
+        return ((long)rx & 0xFFFFFFFFL) | (((long)rz & 0xFFFFFFFFL) << 32);
+    }
+
+    private void addToGrid(Project project) {
+        String dim = project.getWorldId();
+        projectGrid.putIfAbsent(dim, new ConcurrentHashMap<>());
+        ConcurrentHashMap<Long, Set<Project>> dimGrid = projectGrid.get(dim);
+        int minRx = project.getMin().getX() >> 8;
+        int maxRx = project.getMax().getX() >> 8;
+        int minRz = project.getMin().getZ() >> 8;
+        int maxRz = project.getMax().getZ() >> 8;
+        for (int x = minRx; x <= maxRx; x++) {
+            for (int z = minRz; z <= maxRz; z++) {
+                long hash = getRegionHash(x, z);
+                dimGrid.computeIfAbsent(hash, k -> ConcurrentHashMap.newKeySet()).add(project);
+            }
+        }
+    }
+
+    private void removeFromGrid(Project project) {
+        String dim = project.getWorldId();
+        ConcurrentHashMap<Long, Set<Project>> dimGrid = projectGrid.get(dim);
+        if (dimGrid != null) {
+            int minRx = project.getMin().getX() >> 8;
+            int maxRx = project.getMax().getX() >> 8;
+            int minRz = project.getMin().getZ() >> 8;
+            int maxRz = project.getMax().getZ() >> 8;
+            for (int x = minRx; x <= maxRx; x++) {
+                for (int z = minRz; z <= maxRz; z++) {
+                    long hash = getRegionHash(x, z);
+                    Set<Project> set = dimGrid.get(hash);
+                    if (set != null) {
+                        set.remove(project);
+                        if (set.isEmpty()) dimGrid.remove(hash);
+                    }
+                }
+            }
+        }
+    }
+
+    public Set<Project> getProjectsNearPos(String worldId, BlockPos pos, int radiusBlocks) {
+        ConcurrentHashMap<Long, Set<Project>> dimGrid = projectGrid.get(worldId);
+        if (dimGrid == null) return Collections.emptySet();
+        int minRx = (pos.getX() - radiusBlocks) >> 8;
+        int maxRx = (pos.getX() + radiusBlocks) >> 8;
+        int minRz = (pos.getZ() - radiusBlocks) >> 8;
+        int maxRz = (pos.getZ() + radiusBlocks) >> 8;
+        Set<Project> result = new HashSet<>();
+        for (int x = minRx; x <= maxRx; x++) {
+            for (int z = minRz; z <= maxRz; z++) {
+                Set<Project> cell = dimGrid.get(getRegionHash(x, z));
+                if (cell != null) result.addAll(cell);
+            }
+        }
+        return result;
+    }
+
     private ProjectManager() {
     }
 
@@ -95,6 +155,7 @@ public class ProjectManager {
         if (deletingProjects.contains(key) || projects.putIfAbsent(key, project) != null) {
             return false;
         }
+        addToGrid(project);
         saveProject(project);
         return true;
     }
@@ -103,6 +164,7 @@ public class ProjectManager {
         String key = name.toLowerCase(Locale.ROOT);
         Project project = projects.remove(key);
         if (project != null) {
+            removeFromGrid(project);
             deletingProjects.add(key);
             Path projectDir = getProjectDir(project);
             Runnable deleteAction = () -> {
@@ -242,6 +304,7 @@ public class ProjectManager {
 
                         Project project = deserializeProject(obj);
                         projects.put(project.getName().toLowerCase(Locale.ROOT), project);
+                        addToGrid(project);
                         
                         // Legacy File Migration logic
                         Path oldManual = projectDir.resolve("manual");

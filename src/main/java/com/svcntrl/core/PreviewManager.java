@@ -1,5 +1,7 @@
 package com.svcntrl.core;
 
+import com.svcntrl.util.Lang;
+
 import com.svcntrl.config.SvcntrlConfig;
 import com.svcntrl.data.Project;
 import net.minecraft.block.Block;
@@ -40,6 +42,7 @@ public class PreviewManager {
     private final Map<UUID, net.minecraft.util.math.Box> previewBoundingBoxes = new ConcurrentHashMap<>();
     private final Map<UUID, String> previewDimensions = new ConcurrentHashMap<>();
     private final java.util.Set<UUID> pendingPreviews = ConcurrentHashMap.newKeySet();
+    private int tickCounter = 0;
     
 
     private PreviewManager() {}
@@ -135,15 +138,16 @@ public class PreviewManager {
         }
 
         pendingPreviews.add(player.getUuid());
-        player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.loading_snapshot_for_preview").formatted(net.minecraft.util.Formatting.YELLOW));
+        player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.loading_snapshot_for_preview").formatted(net.minecraft.util.Formatting.YELLOW));
         
         com.svcntrl.SvcntrlMod.supplyAsync(() -> {
             return AreaSerializer.readSnapshot(project, branchName, category, snapshotId);
         }).thenAccept(root -> {
             player.getServer().execute(() -> {
                 pendingPreviews.remove(player.getUuid());
+                if (player.isDisconnected()) return;
                 if (root == null) {
-                    player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_load_snapshot_for_pr").formatted(net.minecraft.util.Formatting.RED));
+                    player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.failed_to_load_snapshot_for_pr").formatted(net.minecraft.util.Formatting.RED));
                     return;
                 }
 
@@ -172,13 +176,16 @@ public class PreviewManager {
                 NbtList entities = root.getListOrEmpty("Entities");
                 TaskScheduler.getInstance().schedule(new StartPreviewTask(player, project.getMin(), root, entities));
                 
-                player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.previewing", branchName, category, snapshotId).formatted(net.minecraft.util.Formatting.AQUA));
+                player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.previewing", branchName, category, snapshotId).formatted(net.minecraft.util.Formatting.AQUA));
             });
         });
     }
     
     public void tick(net.minecraft.server.MinecraftServer server) {
         if (!hasAnyPreviews()) return;
+        
+        tickCounter++;
+        if (tickCounter % 4 != 0) return;
         
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             String expectedDim = previewDimensions.get(player.getUuid());
@@ -380,7 +387,8 @@ public class PreviewManager {
                         long now = System.currentTimeMillis();
                         if (now - lastMessageTime > 500) {
                             float percent = (float) currentIndex / totalBlocks * 100f;
-                            player.sendMessage(net.minecraft.text.Text.literal(String.format("Loading Preview: %.1f%%", percent)).formatted(net.minecraft.util.Formatting.GREEN), true);
+                            String pct = String.format(java.util.Locale.US, "%.1f", percent);
+                            player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.loading_preview_progress", pct).formatted(net.minecraft.util.Formatting.GREEN), true);
                             lastMessageTime = now;
                         }
                         if ((System.nanoTime() - startTime) > maxTimeNs || packetsSent > 2048) {
@@ -391,7 +399,7 @@ public class PreviewManager {
                 if (currentIndex >= totalBlocks) {
                     phase = 1;
                     currentIndex = 0;
-                    player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.loading_preview_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
+                    player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.loading_preview_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
                 }
                 return false;
             }
@@ -487,7 +495,8 @@ public class PreviewManager {
                         long now = System.currentTimeMillis();
                         if (now - lastMessageTime > 500) {
                             float percent = (float) currentIndex / positions.size() * 100f;
-                            player.sendMessage(net.minecraft.text.Text.literal(String.format("Clearing Preview: %.1f%%", percent)).formatted(net.minecraft.util.Formatting.GREEN), true);
+                            String pct = String.format(java.util.Locale.US, "%.1f", percent);
+                            player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.clearing_preview_progress", pct).formatted(net.minecraft.util.Formatting.GREEN), true);
                             lastMessageTime = now;
                         }
                     }
@@ -497,7 +506,7 @@ public class PreviewManager {
                 }
             }
             if (showProgress) {
-                player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.clearing_preview_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
+                player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.clearing_preview_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
             }
             return true;
         }

@@ -1,5 +1,7 @@
 package com.svcntrl.core;
 
+import com.svcntrl.util.Lang;
+
 import com.svcntrl.SvcntrlMod;
 import com.svcntrl.data.Project;
 import com.svcntrl.data.ProjectManager;
@@ -46,8 +48,9 @@ public class SaveTask implements TaskScheduler.TickTask {
     private final List<NbtCompound> paletteList = new ArrayList<>();
     private final NbtList blockEntitiesList = new NbtList();
 
-    private int cx, cy, cz;
+    private int cChunkX, cChunkZ, cx, cy, cz;
     private boolean finishedBlocks = false;
+
     private int processed = 0;
     private long lastMessageTime = 0;
 
@@ -70,9 +73,11 @@ public class SaveTask implements TaskScheduler.TickTask {
         
         this.blockData = new int[width * height * length];
         
-        this.cx = min.getX();
+        this.cChunkX = min.getX() >> 4;
+        this.cChunkZ = min.getZ() >> 4;
+        this.cx = Math.max(min.getX(), this.cChunkX << 4);
         this.cy = min.getY();
-        this.cz = min.getZ();
+        this.cz = Math.max(min.getZ(), this.cChunkZ << 4);
 
         this.root = new NbtCompound();
         root.putInt("Version", 2); // Version 2 uses Palette + IntArray
@@ -122,75 +127,92 @@ public class SaveTask implements TaskScheduler.TickTask {
         int cachedChunkX = Integer.MIN_VALUE;
         int cachedChunkZ = Integer.MIN_VALUE;
 
-        while (cy <= max.getY()) {
-            while (cz <= max.getZ()) {
-                while (cx <= max.getX()) {
-                    mutable.set(cx, cy, cz);
-                    
-                    int currentChunkX = cx >> 4;
-                    int currentChunkZ = cz >> 4;
-                    if (cachedChunk == null || cachedChunkX != currentChunkX || cachedChunkZ != currentChunkZ) {
-                        net.minecraft.world.chunk.Chunk chunk = world.getChunk(currentChunkX, currentChunkZ, net.minecraft.world.chunk.ChunkStatus.FULL, false);
-                        if (chunk == null) {
-                            world.getChunkManager().addTicket(net.minecraft.server.world.ChunkTicketType.UNKNOWN, new net.minecraft.util.math.ChunkPos(currentChunkX, currentChunkZ), 2);
-                            return false;
-                        }
-                        cachedChunk = (net.minecraft.world.chunk.WorldChunk) chunk;
-                        cachedChunkX = currentChunkX;
-                        cachedChunkZ = currentChunkZ;
-                        
-                        if ((System.nanoTime() - startTime) > maxTimeNs) return false;
-                    }
+        int maxChunkX = max.getX() >> 4;
+        int maxChunkZ = max.getZ() >> 4;
 
-                    BlockState state = cachedChunk.getBlockState(mutable);
-                    
-                    int rx = cx - min.getX();
-                    int ry = cy - min.getY();
-                    int rz = cz - min.getZ();
-                    
-                    int index = rz * (width * height) + ry * width + rx;
-                    blockData[index] = getPaletteIndex(state);
+        while (cChunkX <= maxChunkX) {
+            while (cChunkZ <= maxChunkZ) {
+                int chunkStartX = Math.max(min.getX(), cChunkX << 4);
+                int chunkEndX = Math.min(max.getX(), (cChunkX << 4) + 15);
+                int chunkStartZ = Math.max(min.getZ(), cChunkZ << 4);
+                int chunkEndZ = Math.min(max.getZ(), (cChunkZ << 4) + 15);
 
-                    BlockEntity blockEntity = cachedChunk.getBlockEntity(mutable);
-                    if (blockEntity != null) {
-                        NbtCompound blockEntityNbt = blockEntity.createNbtWithIdentifyingData(world.getRegistryManager());
-                        blockEntityNbt.remove("x");
-                        blockEntityNbt.remove("y");
-                        blockEntityNbt.remove("z");
-                        
-                        NbtCompound entry = new NbtCompound();
-                        entry.putInt("X", rx);
-                        entry.putInt("Y", ry);
-                        entry.putInt("Z", rz);
-                        entry.put("Data", blockEntityNbt);
-                        blockEntitiesList.add(entry);
-                    }
+                if (cachedChunk == null || cachedChunkX != cChunkX || cachedChunkZ != cChunkZ) {
+                    cachedChunk = world.getWorldChunk(new net.minecraft.util.math.BlockPos(cChunkX << 4, 0, cChunkZ << 4));
+                    cachedChunkX = cChunkX;
+                    cachedChunkZ = cChunkZ;
+                    if ((System.nanoTime() - startTime) > maxTimeNs) return false;
+                }
 
-                    processed++;
-                    cx++;
+                while (cy <= max.getY()) {
+                    while (cz <= chunkEndZ) {
+                        while (cx <= chunkEndX) {
+                            mutable.set(cx, cy, cz);
+                            
+                            BlockState state = cachedChunk.getBlockState(mutable);
+                            int rx = cx - min.getX();
+                            int ry = cy - min.getY();
+                            int rz = cz - min.getZ();
+                            
+                            int index = rz * (width * height) + ry * width + rx;
+                            blockData[index] = getPaletteIndex(state);
 
-                    if ((processed & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) {
-                        if (player != null && !player.isDisconnected()) {
-                            long now = System.currentTimeMillis();
-                            if (now - lastMessageTime > 500) {
-                                float percent = (float) processed / (width * height * length) * 100f;
-                                player.sendMessage(net.minecraft.text.Text.literal(String.format("Saving Blocks: %.1f%%", percent)).formatted(net.minecraft.util.Formatting.GREEN), true);
-                                lastMessageTime = now;
+                            BlockEntity blockEntity = cachedChunk.getBlockEntity(mutable);
+                            if (blockEntity != null) {
+                                NbtCompound blockEntityNbt = blockEntity.createNbtWithIdentifyingData(world.getRegistryManager());
+                                blockEntityNbt.remove("x");
+                                blockEntityNbt.remove("y");
+                                blockEntityNbt.remove("z");
+                                
+                                NbtCompound entry = new NbtCompound();
+                                entry.putInt("X", rx);
+                                entry.putInt("Y", ry);
+                                entry.putInt("Z", rz);
+                                entry.put("Data", blockEntityNbt);
+                                blockEntitiesList.add(entry);
+                            }
+
+                            processed++;
+                            cx++;
+
+                            if ((processed & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) {
+                                if (player != null && !player.isDisconnected()) {
+                                    long now = System.currentTimeMillis();
+                                    if (now - lastMessageTime > 50) {
+                                        float percent = (float) processed / (width * (long)height * length) * 100f;
+                                        String pct = String.format(java.util.Locale.US, "%.1f", percent);
+                                        player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.saving_blocks_progress", pct).formatted(net.minecraft.util.Formatting.GREEN), true);
+                                        lastMessageTime = now;
+                                    }
+                                }
+                                return false;
                             }
                         }
-                        return false;
+                        cx = chunkStartX;
+                        cz++;
                     }
+                    cz = chunkStartZ;
+                    cy++;
                 }
-                cx = min.getX();
-                cz++;
+                cy = min.getY();
+
+                cChunkZ++;
+                if (cChunkZ <= maxChunkZ) {
+                    cz = Math.max(min.getZ(), cChunkZ << 4);
+                }
             }
-            cz = min.getZ();
-            cy++;
+            cChunkZ = min.getZ() >> 4;
+            cz = Math.max(min.getZ(), cChunkZ << 4);
+
+            cChunkX++;
+            if (cChunkX <= maxChunkX) {
+                cx = Math.max(min.getX(), cChunkX << 4);
+            }
         }
 
         finishedBlocks = true;
         if (player != null && !player.isDisconnected()) {
-            player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.saving_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
+            player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.saving_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
         }
         finishSave();
         return true;
@@ -200,7 +222,7 @@ public class SaveTask implements TaskScheduler.TickTask {
     public void onCancel(Throwable t) {
         ProjectManager.getInstance().setProjectLocked(project, false);
         if (player != null && !player.isDisconnected()) {
-            player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.save_failed_cancelled").formatted(net.minecraft.util.Formatting.RED), false);
+            player.sendMessage(com.svcntrl.util.Lang.translatable("svcntrl.msg.save_failed_cancelled").formatted(net.minecraft.util.Formatting.RED), false);
         }
         if (onError != null) {
             onError.accept(t.getMessage());

@@ -1,5 +1,7 @@
 package com.svcntrl.command;
 
+import com.svcntrl.util.Lang;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -511,7 +513,10 @@ public class SvcntrlCommands {
                 Project.Branch branch = project.getBranch(project.getCurrentBranchName());
                 if (branch != null) {
                     List<Project.SnapshotMeta> history = "auto".equalsIgnoreCase(category) ? branch.getAutoSnapshots() : branch.getManualSnapshots();
-                    List<String> ids = history.stream().map(meta -> String.valueOf(meta.getId())).toList();
+                    List<String> ids;
+                    synchronized (history) {
+                        ids = history.stream().map(meta -> String.valueOf(meta.getId())).toList();
+                    }
                     return net.minecraft.command.CommandSource.suggestMatching(ids, builder);
                 }
             }
@@ -575,46 +580,46 @@ public class SvcntrlCommands {
                 return world;
             }
         }
-        source.sendError(Text.translatable("svcntrl.msg.world_for_project_not_found"));
+        source.sendError(Lang.translatable("svcntrl.msg.world_for_project_not_found"));
         return null;
     }
 
 
 
     private static int executeHelp(ServerCommandSource source) {
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_commands").formatted(Formatting.GOLD), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.projects").formatted(Formatting.GRAY), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_project_create_name_cr").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.project_select").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.project_raycast").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.project_tp").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.project_trust").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_project_remove_name_fo").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.project_list").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.snapshots").formatted(Formatting.GRAY), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_save_desc_create_a_man").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.log").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_restore_manual_auto_id").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.restore_patch").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.restore_patch_cross").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.warning_restore_immediate").formatted(Formatting.RED), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.deletesave").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.preview").formatted(Formatting.GRAY), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.preview_start").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.preview_stop").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.export").formatted(Formatting.GRAY), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_export_id_export_snaps").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.export_diff").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.export_all").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.upload").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.branches").formatted(Formatting.GRAY), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_branch_create_name_nos").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_branch_checkout_name_n").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_branch_list_delete_man").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.other").formatted(Formatting.GRAY), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.outline").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_pos1_pos2_set_position").formatted(Formatting.YELLOW), false);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.help.reload").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.svcntrl_commands").formatted(Formatting.GOLD), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.projects").formatted(Formatting.GRAY), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.svcntrl_project_create_name_cr").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.project_select").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.project_raycast").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.project_tp").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.project_trust").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.svcntrl_project_remove_name_fo").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.project_list").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.snapshots").formatted(Formatting.GRAY), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.svcntrl_save_desc_create_a_man").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.log").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.svcntrl_restore_manual_auto_id").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.restore_patch").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.restore_patch_cross").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.warning_restore_immediate").formatted(Formatting.RED), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.deletesave").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.preview").formatted(Formatting.GRAY), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.preview_start").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.preview_stop").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.export").formatted(Formatting.GRAY), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.svcntrl_export_id_export_snaps").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.export_diff").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.export_all").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.upload").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.branches").formatted(Formatting.GRAY), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.svcntrl_branch_create_name_nos").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.svcntrl_branch_checkout_name_n").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.svcntrl_branch_list_delete_man").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.other").formatted(Formatting.GRAY), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.outline").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.svcntrl_pos1_pos2_set_position").formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.help.reload").formatted(Formatting.YELLOW), false);
         return 1;
     }
 
@@ -637,7 +642,7 @@ public class SvcntrlCommands {
         if (player == null) return 0;
         List<Project> projects = ProjectManager.getInstance().getProjectsForPlayer(player.getUuid());
         if (projects.isEmpty()) {
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.no_projects").formatted(Formatting.YELLOW), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.no_projects").formatted(Formatting.YELLOW), false);
             return 1;
         }
         
@@ -647,11 +652,11 @@ public class SvcntrlCommands {
         int start = (finalPage - 1) * perPage;
         int end = Math.min(start + perPage, projects.size());
         
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.projects_page", finalPage, totalPages).formatted(Formatting.AQUA, Formatting.BOLD), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.projects_page", finalPage, totalPages).formatted(Formatting.AQUA, Formatting.BOLD), false);
         for (int i = start; i < end; i++) {
             Project p = projects.get(i);
             String role = p.isOwner(player.getUuid()) ? "Owner" : "Member";
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.project_list_item", p.getName(), role).formatted(Formatting.GREEN), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.project_list_item", p.getName(), role).formatted(Formatting.GREEN), false);
         }
         return 1;
     }
@@ -662,8 +667,8 @@ public class SvcntrlCommands {
 
     private static int executeCreate(ServerCommandSource source, String name) {
         ServerPlayerEntity player = source.getPlayer();
-        if (player == null) { source.sendError(Text.translatable("svcntrl.msg.this_command_can_only_be_used")); return 0; }
-        if (!isValidName(name)) { source.sendError(Text.translatable("svcntrl.msg.invalid_name_use_only_letters")); return 0; }
+        if (player == null) { source.sendError(Lang.translatable("svcntrl.msg.this_command_can_only_be_used")); return 0; }
+        if (!isValidName(name)) { source.sendError(Lang.translatable("svcntrl.msg.invalid_name_use_only_letters")); return 0; }
         PendingCreateManager.getInstance().startCreation(player, name);
         return 1;
     }
@@ -672,8 +677,8 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getProject(name);
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.project_not_found_name", name)); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.project_not_found_name", name)); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
 
         ServerWorld world = getProjectWorld(source, project);
         if (world == null) return 0;
@@ -684,7 +689,7 @@ public class SvcntrlCommands {
         double centerZ = min.getZ() + (max.getZ() - min.getZ()) / 2.0;
         double y = max.getY() + 1.0;
         player.teleport(world, centerX, y, centerZ, java.util.EnumSet.noneOf(net.minecraft.network.packet.s2c.play.PositionFlag.class), player.getYaw(), player.getPitch(), true);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.teleported_to_project", name).formatted(Formatting.GREEN), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.teleported_to_project", name).formatted(Formatting.GREEN), false);
         return 1;
     }
 
@@ -692,19 +697,19 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getProject(name);
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.project_not_found")); return 0; }
-        if (!project.isOwner(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.only_the_project_owner_or_admi")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.project_not_found")); return 0; }
+        if (!project.isOwner(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.only_the_project_owner_or_admi")); return 0; }
         if (!force) {
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.remove_project_confirm", name).formatted(Formatting.YELLOW), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.remove_project_confirm", name).formatted(Formatting.YELLOW), false);
             return 1;
         }
         if (project.isLocked()) {
-            source.sendError(Text.translatable("svcntrl.msg.cannot_delete_project_an_opera"));
+            source.sendError(Lang.translatable("svcntrl.msg.cannot_delete_project_an_opera"));
             return 0;
         }
         com.svcntrl.core.PreviewManager.getInstance().stopPreviewForProject(source.getServer(), name);
         ProjectManager.getInstance().removeProject(name);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.project_was_permanently_deleted", name).formatted(Formatting.RED), true);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.project_was_permanently_deleted", name).formatted(Formatting.RED), true);
         return 1;
     }
 
@@ -712,7 +717,7 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         UXManager.getInstance().setRaycasting(player.getUuid(), true);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.raycast_selection_mode_enabled").formatted(Formatting.GREEN), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.raycast_selection_mode_enabled").formatted(Formatting.GREEN), false);
         return 1;
     }
 
@@ -720,10 +725,10 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getProject(name);
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.project_not_found_name2", name)); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.project_not_found_name2", name)); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         ProjectManager.getInstance().setActiveProject(player.getUuid(), name);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.active_project_set_to").formatted(Formatting.GREEN).append(Text.literal(name).formatted(Formatting.GOLD)), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.active_project_set_to").formatted(Formatting.GREEN).append(Text.literal(name).formatted(Formatting.GOLD)), false);
         resyncCommands(player);
         return 1;
     }
@@ -732,10 +737,10 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         boolean active = UXManager.getInstance().toggleOutline(player.getUuid());
-        source.sendFeedback(() -> Text.translatable(active ? "svcntrl.msg.outline_enabled" : "svcntrl.msg.outline_disabled").formatted(Formatting.GREEN), false);
+        source.sendFeedback(() -> Lang.translatable(active ? "svcntrl.msg.outline_enabled" : "svcntrl.msg.outline_disabled").formatted(Formatting.GREEN), false);
         return 1;
     }
 
@@ -743,23 +748,23 @@ public class SvcntrlCommands {
         ServerPlayerEntity sender = source.getPlayer();
         if (sender == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(sender.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
         java.util.Optional<com.mojang.authlib.GameProfile> profileOpt = source.getServer().getUserCache().findByName(playerName);
-        if (profileOpt.isEmpty()) { source.sendError(Text.translatable("svcntrl.msg.player_not_found")); return 0; }
+        if (profileOpt.isEmpty()) { source.sendError(Lang.translatable("svcntrl.msg.player_not_found")); return 0; }
         UUID targetUuid = profileOpt.get().getId();
         if (add) {
             if (project.addMember(targetUuid)) {
                 ProjectManager.getInstance().saveProject(project);
-                source.sendFeedback(() -> Text.translatable("svcntrl.msg.added_to_project", playerName).formatted(Formatting.GREEN), false);
+                source.sendFeedback(() -> Lang.translatable("svcntrl.msg.added_to_project", playerName).formatted(Formatting.GREEN), false);
             } else {
-                source.sendError(Text.translatable("svcntrl.msg.already_in_project", playerName));
+                source.sendError(Lang.translatable("svcntrl.msg.already_in_project", playerName));
             }
         } else {
             if (project.removeMember(targetUuid)) {
                 ProjectManager.getInstance().saveProject(project);
-                source.sendFeedback(() -> Text.translatable("svcntrl.msg.removed_from_project", playerName).formatted(Formatting.GREEN), false);
+                source.sendFeedback(() -> Lang.translatable("svcntrl.msg.removed_from_project", playerName).formatted(Formatting.GREEN), false);
             } else {
-                source.sendError(Text.translatable("svcntrl.msg.not_in_project", playerName));
+                source.sendError(Lang.translatable("svcntrl.msg.not_in_project", playerName));
             }
         }
         return 1;
@@ -769,12 +774,12 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.branches_for_project").append(Text.literal(project.getName()).formatted(Formatting.AQUA)), false);
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.branches_for_project").append(Text.literal(project.getName()).formatted(Formatting.AQUA)), false);
         for (Project.Branch b : project.getBranches()) {
             boolean isCurrent = b.getName().equals(project.getCurrentBranchName());
-            source.sendFeedback(() -> Text.translatable(isCurrent ? "svcntrl.msg.branch_list_item_current" : "svcntrl.msg.branch_list_item", b.getName())
+            source.sendFeedback(() -> Lang.translatable(isCurrent ? "svcntrl.msg.branch_list_item_current" : "svcntrl.msg.branch_list_item", b.getName())
                     .formatted(isCurrent ? Formatting.GREEN : Formatting.WHITE), false);
         }
         return 1;
@@ -784,9 +789,9 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project.isLocked()) { source.sendError(Lang.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
         
         ServerWorld world = getProjectWorld(source, project);
         if (world == null) return 0;
@@ -799,14 +804,14 @@ public class SvcntrlCommands {
 
         int snapshotId = project.addManualSnapshot(branchName, description, player.getUuid(), player.getName().getString());
         
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.saving_project").append(Text.literal(project.getName()).formatted(Formatting.AQUA)), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.saving_project").append(Text.literal(project.getName()).formatted(Formatting.AQUA)), false);
         
         AreaSerializer.saveAreaAsync(player, world, project, branchName, "manual", snapshotId, () -> {
             ProjectManager.getInstance().saveProject(project);
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.project_saved_snapshot_id").formatted(Formatting.GREEN).append(Text.literal(String.valueOf(snapshotId)).formatted(Formatting.GOLD)), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.project_saved_snapshot_id").formatted(Formatting.GREEN).append(Text.literal(String.valueOf(snapshotId)).formatted(Formatting.GOLD)), false);
         }, error -> {
             rollbackSnapshot(project, branchName, snapshotId, false);
-                    source.sendError(Text.translatable("svcntrl.msg.failed_to_save", error));
+                    source.sendError(Lang.translatable("svcntrl.msg.failed_to_save", error));
         });
 
         return 1;
@@ -816,12 +821,12 @@ public class SvcntrlCommands {
         String name = nameArg.toLowerCase(java.util.Locale.ROOT);
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
-        if (!isValidName(name)) { source.sendError(Text.translatable("svcntrl.msg.invalid_branch_name_use_only_l")); return 0; }
+        if (!isValidName(name)) { source.sendError(Lang.translatable("svcntrl.msg.invalid_branch_name_use_only_l")); return 0; }
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
-        if (project.hasBranch(name)) { source.sendError(Text.translatable("svcntrl.msg.branch_already_exists")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project.isLocked()) { source.sendError(Lang.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (project.hasBranch(name)) { source.sendError(Lang.translatable("svcntrl.msg.branch_already_exists")); return 0; }
         
         ServerWorld world = getProjectWorld(source, project);
         if (world == null) return 0;
@@ -832,28 +837,28 @@ public class SvcntrlCommands {
         String fallbackBranch = project.getCurrentBranchName();
         Runnable createInitialCommit = () -> {
             project.setCurrentBranchName(name);
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.branch_created_saving", name).formatted(Formatting.YELLOW), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.branch_created_saving", name).formatted(Formatting.YELLOW), false);
             int manualId = project.addManualSnapshot(name, "Initial commit for branch " + name, player.getUuid(), player.getName().getString());
             AreaSerializer.saveAreaAsync(player, world, project, name, "manual", manualId, () -> {
-                source.sendFeedback(() -> Text.translatable("svcntrl.msg.branch_state_saved").formatted(Formatting.GREEN), false);
+                source.sendFeedback(() -> Lang.translatable("svcntrl.msg.branch_state_saved").formatted(Formatting.GREEN), false);
                 ProjectManager.getInstance().saveProject(project);
             }, err -> {
                 project.setCurrentBranchName(fallbackBranch);
                 rollbackSnapshot(project, name, manualId, true);
-                source.sendError(Text.translatable("svcntrl.msg.failed_initial_commit", err));
+                source.sendError(Lang.translatable("svcntrl.msg.failed_initial_commit", err));
             });
         };
 
         if (!noSave && com.svcntrl.config.SvcntrlConfig.getInstance().autoSaveOnBranchCreate) {
             String currentBranch = project.getCurrentBranchName();
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.saving_before_branch_create", currentBranch).formatted(Formatting.YELLOW), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.saving_before_branch_create", currentBranch).formatted(Formatting.YELLOW), false);
             int currentAutoId = project.addAutoSnapshot(currentBranch, "Auto-save before creating branch " + name, player.getUuid(), player.getName().getString());
             AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", currentAutoId, () -> {
                 project.trimAutoSnapshots(currentBranch);
                 createInitialCommit.run();
             }, err -> {
                 rollbackSnapshot(project, currentBranch, currentAutoId, true);
-                source.sendError(Text.translatable("svcntrl.msg.failed_current_branch_save", err));
+                source.sendError(Lang.translatable("svcntrl.msg.failed_current_branch_save", err));
             });
         } else {
             createInitialCommit.run();
@@ -866,13 +871,13 @@ public class SvcntrlCommands {
         String name = nameArg.toLowerCase(java.util.Locale.ROOT);
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
-        if (!isValidName(name)) { source.sendError(Text.translatable("svcntrl.msg.invalid_branch_name_use_only_l")); return 0; }
+        if (!isValidName(name)) { source.sendError(Lang.translatable("svcntrl.msg.invalid_branch_name_use_only_l")); return 0; }
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
-        if (!project.hasBranch(name)) { source.sendError(Text.translatable("svcntrl.msg.branch_not_found")); return 0; }
-        if (project.getCurrentBranchName().equals(name)) { source.sendError(Text.translatable("svcntrl.msg.already_on_branch", name)); return 0; }
-        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (!project.hasBranch(name)) { source.sendError(Lang.translatable("svcntrl.msg.branch_not_found", name)); return 0; }
+        if (project.getCurrentBranchName().equals(name)) { source.sendError(Lang.translatable("svcntrl.msg.already_on_branch", name)); return 0; }
+        if (project.isLocked()) { source.sendError(Lang.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
         
         ServerWorld world = getProjectWorld(source, project);
         if (world == null) return 0;
@@ -909,23 +914,23 @@ public class SvcntrlCommands {
             if (restoreId == -1) {
                 project.setCurrentBranchName(name);
                 ProjectManager.getInstance().saveProject(project);
-                source.sendFeedback(() -> Text.translatable("svcntrl.msg.checked_out_empty", name).formatted(Formatting.GREEN), false);
+                source.sendFeedback(() -> Lang.translatable("svcntrl.msg.checked_out_empty", name).formatted(Formatting.GREEN), false);
                 return;
             }
             
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.restoring_branch", name).formatted(Formatting.YELLOW), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.restoring_branch", name).formatted(Formatting.YELLOW), false);
             boolean success = AreaSerializer.restoreArea(player, world, project, name, category, restoreId, false, () -> {
                 project.setCurrentBranchName(name);
                 ProjectManager.getInstance().saveProject(project);
             }, null);
             if (!success) {
-                source.sendError(Text.translatable("svcntrl.msg.failed_to_load_branch_data"));
+                source.sendError(Lang.translatable("svcntrl.msg.failed_to_load_branch_data"));
             }
         };
 
         if (!noSave && com.svcntrl.config.SvcntrlConfig.getInstance().autoSaveOnBranchSwitch) {
             String oldBranch = project.getCurrentBranchName();
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.saving_current_state", oldBranch).formatted(Formatting.YELLOW), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.saving_current_state", oldBranch).formatted(Formatting.YELLOW), false);
             
             int autoId = project.addAutoSnapshot(oldBranch, "Auto-save before checkout to " + name, player.getUuid(), player.getName().getString());
             AreaSerializer.saveAreaAsync(player, world, project, oldBranch, "auto", autoId, () -> {
@@ -933,10 +938,10 @@ public class SvcntrlCommands {
                 onCheckout.run();
             }, err -> {
                 rollbackSnapshot(project, oldBranch, autoId, true);
-                    source.sendError(Text.translatable("svcntrl.msg.failed_save_branch_state", err));
+                    source.sendError(Lang.translatable("svcntrl.msg.failed_save_branch_state", err));
             });
         } else {
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.checkout_no_save_warning").formatted(Formatting.RED, Formatting.BOLD), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.checkout_no_save_warning").formatted(Formatting.RED, Formatting.BOLD), false);
             onCheckout.run();
         }
         resyncCommands(player);
@@ -945,23 +950,23 @@ public class SvcntrlCommands {
 
     private static int executeBranchDelete(ServerCommandSource source, String nameArg, boolean force) {
         if (!force) {
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.remove_branch_confirm", nameArg).formatted(Formatting.YELLOW), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.remove_branch_confirm", nameArg).formatted(Formatting.YELLOW), false);
             return 1;
         }
         String name = nameArg.toLowerCase(java.util.Locale.ROOT);
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
-        if (!isValidName(name)) { source.sendError(Text.translatable("svcntrl.msg.invalid_branch_name_use_only_l")); return 0; }
+        if (!isValidName(name)) { source.sendError(Lang.translatable("svcntrl.msg.invalid_branch_name_use_only_l")); return 0; }
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
-        if (project.getCurrentBranchName().equals(name)) { source.sendError(Text.translatable("svcntrl.msg.cannot_delete_current_branch")); return 0; }
-        if (!project.hasBranch(name)) { source.sendError(Text.translatable("svcntrl.msg.branch_not_found")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (project.isLocked()) { source.sendError(Lang.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (project.getCurrentBranchName().equals(name)) { source.sendError(Lang.translatable("svcntrl.msg.cannot_delete_current_branch")); return 0; }
+        if (!project.hasBranch(name)) { source.sendError(Lang.translatable("svcntrl.msg.branch_not_found", name)); return 0; }
         
         project.deleteBranch(name);
         ProjectManager.getInstance().deleteBranchDir(project, name);
         ProjectManager.getInstance().saveProject(project);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.branch_deleted", name).formatted(Formatting.GREEN), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.branch_deleted", name).formatted(Formatting.GREEN), false);
         resyncCommands(player);
         return 1;
     }
@@ -970,29 +975,32 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (project.isLocked()) { source.sendError(Lang.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
 
         Project.Branch branch = project.getBranch(project.getCurrentBranchName());
         java.util.List<Project.SnapshotMeta> snapshots = category.equals("manual") ? branch.getManualSnapshots() : branch.getAutoSnapshots();
         
         // Project guarantees snapshots are appended in monotonically increasing ID order
-        int left = 0, right = snapshots.size() - 1;
         boolean found = false;
-        while (left <= right) {
-            int mid = left + (right - left) / 2;
-            int midId = snapshots.get(mid).getId();
-            if (midId == id) {
-                found = true;
-                break;
-            } else if (midId < id) {
-                left = mid + 1;
-            } else {
-                right = mid - 1;
+        synchronized (snapshots) {
+            int left = 0, right = snapshots.size() - 1;
+            while (left <= right) {
+                int mid = left + (right - left) / 2;
+                int midId = snapshots.get(mid).getId();
+                if (midId == id) {
+                    found = true;
+                    break;
+                } else if (midId < id) {
+                    left = mid + 1;
+                } else {
+                    right = mid - 1;
+                }
             }
         }
         
         if (!found) {
-            source.sendError(Text.translatable("svcntrl.msg.snapshot_not_found"));
+            source.sendError(Lang.translatable("svcntrl.msg.snapshot_not_found", String.valueOf(id), branch.getName()));
             return 0;
         }
         
@@ -1013,7 +1021,7 @@ public class SvcntrlCommands {
                 com.svcntrl.SvcntrlMod.LOGGER.error("Failed to delete snapshot file", e);
             }
         });
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.snapshot_deleted", String.valueOf(id), category).formatted(Formatting.GREEN), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.snapshot_deleted", String.valueOf(id), category).formatted(Formatting.GREEN), false);
         return 1;
     }
 
@@ -1023,13 +1031,16 @@ public class SvcntrlCommands {
         if (player == null) return 0;
 
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
 
         Project.Branch branch = project.getBranch(project.getCurrentBranchName());
         List<Project.SnapshotMeta> rawSnapshots = "auto".equalsIgnoreCase(category) ? branch.getAutoSnapshots() : branch.getManualSnapshots();
 
-        List<Project.SnapshotMeta> snapshots = rawSnapshots;
+        List<Project.SnapshotMeta> snapshots;
+        synchronized (rawSnapshots) {
+            snapshots = new java.util.ArrayList<>(rawSnapshots);
+        }
         if (filter != null && !filter.trim().isEmpty()) {
             String f = filter.toLowerCase();
             String[] tokens = f.split("\\s+");
@@ -1046,9 +1057,9 @@ public class SvcntrlCommands {
 
         if (snapshots.isEmpty()) {
             if (filter != null) {
-                source.sendFeedback(() -> Text.translatable("svcntrl.msg.no_snapshots_filter", category, filter), false);
+                source.sendFeedback(() -> Lang.translatable("svcntrl.msg.no_snapshots_filter", category, filter), false);
             } else {
-                source.sendFeedback(() -> Text.translatable("svcntrl.msg.no_snapshots_branch", category, branch.getName()), false);
+                source.sendFeedback(() -> Lang.translatable("svcntrl.msg.no_snapshots_branch", category, branch.getName()), false);
             }
             return 1;
         }
@@ -1059,9 +1070,11 @@ public class SvcntrlCommands {
         if (page > totalPages) page = totalPages;
 
         final int finalPage = page;
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.snapshots_for")
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.snapshots_for")
                 .append(Text.literal(project.getName()).formatted(Formatting.AQUA))
-                .append(Text.literal(" (" + branch.getName() + ")" + (filter != null ? " [Filter: " + filter + "]" : "") + " === Page " + finalPage + "/" + totalPages).formatted(Formatting.GRAY)), false);
+                .append(Text.literal(" (" + branch.getName() + ")").formatted(Formatting.GRAY))
+                .append(filter != null ? Lang.translatable("svcntrl.msg.history_filter", filter).formatted(Formatting.GRAY) : Text.literal(""))
+                .append(Lang.translatable("svcntrl.msg.history_page_suffix", finalPage, totalPages).formatted(Formatting.GRAY)), false);
 
         int startIndex = snapshots.size() - 1 - (page - 1) * pageSize;
         int endIndex = Math.max(0, startIndex - pageSize + 1);
@@ -1074,12 +1087,12 @@ public class SvcntrlCommands {
                     .append(Text.literal(" " + meta.getDescription()).formatted(Formatting.WHITE))
                     .append(Text.literal(" — " + meta.getAuthorName() + " " + time).formatted(Formatting.DARK_GRAY));
 
-            MutableText previewBtn = Text.translatable("svcntrl.msg.preview").formatted(Formatting.AQUA)
-                    .styled(style -> style.withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl preview start " + category + " " + meta.getId())).withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(Text.translatable("svcntrl.msg.click_to_preview"))));
-            MutableText exportBtn = Text.translatable("svcntrl.msg.export").formatted(Formatting.LIGHT_PURPLE)
-                    .styled(style -> style.withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl export " + category + " " + meta.getId())).withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(Text.translatable("svcntrl.msg.click_to_export"))));
-            MutableText restoreBtn = Text.translatable("svcntrl.msg.restore").formatted(Formatting.RED)
-                    .styled(style -> style.withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl restore " + category + " " + meta.getId())).withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(Text.translatable("svcntrl.msg.click_to_restore"))));
+            MutableText previewBtn = Lang.translatable("svcntrl.msg.preview").formatted(Formatting.AQUA)
+                    .styled(style -> style.withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl preview start " + category + " " + meta.getId())).withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(Lang.translatable("svcntrl.msg.click_to_preview"))));
+            MutableText exportBtn = Lang.translatable("svcntrl.msg.export").formatted(Formatting.LIGHT_PURPLE)
+                    .styled(style -> style.withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl export " + category + " " + meta.getId())).withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(Lang.translatable("svcntrl.msg.click_to_export"))));
+            MutableText restoreBtn = Lang.translatable("svcntrl.msg.restore").formatted(Formatting.RED)
+                    .styled(style -> style.withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/svcntrl restore " + category + " " + meta.getId())).withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(Lang.translatable("svcntrl.msg.click_to_restore"))));
 
             entry.append(previewBtn).append(exportBtn).append(restoreBtn);
             source.sendFeedback(() -> entry, false);
@@ -1092,42 +1105,42 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         ServerWorld world = getProjectWorld(source, project);
         if (world == null) return 0;
 
-        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (project.isLocked()) { source.sendError(Lang.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
 
         String currentBranch = project.getCurrentBranchName();
         String targetBranch = (branchArg != null && !branchArg.isEmpty()) ? branchArg.toLowerCase(java.util.Locale.ROOT) : currentBranch;
-        if (!project.hasBranch(targetBranch)) { source.sendError(Text.translatable("svcntrl.msg.branch_not_found", targetBranch)); return 0; }
+        if (!project.hasBranch(targetBranch)) { source.sendError(Lang.translatable("svcntrl.msg.branch_not_found", targetBranch)); return 0; }
 
         java.nio.file.Path snapshotPath = ProjectManager.getInstance().getSnapshotPath(project, targetBranch, category, id);
         if (!java.nio.file.Files.exists(snapshotPath)) {
-            source.sendError(Text.translatable("svcntrl.msg.target_snapshot_missing", targetBranch, category, id));
+            source.sendError(Lang.translatable("svcntrl.msg.target_snapshot_missing", targetBranch, category, id));
             return 0;
         }
 
         if (!noSave && com.svcntrl.config.SvcntrlConfig.getInstance().autoSaveOnRestore) {
             int autoId = project.addAutoSnapshot(currentBranch, "Auto-save before restore to " + targetBranch + ":" + id, player.getUuid(), player.getName().getString());
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.creating_auto_save_before_rest").formatted(Formatting.YELLOW), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.creating_auto_save_before_rest").formatted(Formatting.YELLOW), false);
             AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", autoId, () -> {
                 project.trimAutoSnapshots(currentBranch, (category.equals("auto") && targetBranch.equals(currentBranch)) ? new int[]{id} : new int[0]);
                 boolean success = AreaSerializer.restoreArea(player, world, project, targetBranch, category, id, excludeIntersections, null, null);
                 if (success) {
                     ProjectManager.getInstance().saveProject(project);
                 } else {
-                    source.sendError(Text.translatable("svcntrl.msg.failed_to_restore_snapshot_mis"));
+                    source.sendError(Lang.translatable("svcntrl.msg.failed_to_restore_snapshot_mis"));
                 }
             }, err -> {
                 rollbackSnapshot(project, currentBranch, autoId, true);
-                    source.sendError(Text.translatable("svcntrl.msg.backup_failed", err));
+                    source.sendError(Lang.translatable("svcntrl.msg.backup_failed", err));
             });
         } else {
             boolean success = AreaSerializer.restoreArea(player, world, project, targetBranch, category, id, excludeIntersections, null, null);
             if (!success) {
-                source.sendError(Text.translatable("svcntrl.msg.failed_to_restore_snapshot_mis"));
+                source.sendError(Lang.translatable("svcntrl.msg.failed_to_restore_snapshot_mis"));
             }
         }
         return 1;
@@ -1137,39 +1150,44 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         ServerWorld world = getProjectWorld(source, project);
         if (world == null) return 0;
 
-        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (project.isLocked()) { source.sendError(Lang.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
 
         String branchName = project.getCurrentBranchName();
 
+        java.nio.file.Path targetPath = ProjectManager.getInstance().getSnapshotPath(project, branchName, category, targetId);
+        if (!java.nio.file.Files.exists(targetPath)) { source.sendError(Lang.translatable("svcntrl.msg.target_snapshot_missing", branchName, category, targetId)); return 0; }
+        java.nio.file.Path basePath = ProjectManager.getInstance().getSnapshotPath(project, branchName, category, baseId);
+        if (!java.nio.file.Files.exists(basePath)) { source.sendError(Lang.translatable("svcntrl.msg.target_snapshot_missing", branchName, category, baseId)); return 0; }
+
         if (!noSave && com.svcntrl.config.SvcntrlConfig.getInstance().autoSaveOnRestore) {
             int autoId = project.addAutoSnapshot(branchName, "Auto-save before patch restore (Target: " + targetId + ", Base: " + baseId + ")", player.getUuid(), player.getName().getString());
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.creating_auto_save_before_patc").formatted(Formatting.YELLOW), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.creating_auto_save_before_patc").formatted(Formatting.YELLOW), false);
             
             AreaSerializer.saveAreaAsync(player, world, project, branchName, "auto", autoId, () -> {
                 project.trimAutoSnapshots(branchName, category.equals("auto") ? new int[]{targetId, baseId} : new int[0]);
                 boolean success = AreaSerializer.restorePatchArea(player, world, project, branchName, category, targetId, branchName, category, baseId, excludeIntersections, null, null);
                 if (success) {
-                    source.sendFeedback(() -> Text.translatable("svcntrl.msg.applying_patch_entities_fully").formatted(Formatting.GREEN), false);
+                    source.sendFeedback(() -> Lang.translatable("svcntrl.msg.applying_patch_entities_fully").formatted(Formatting.GREEN), false);
                     ProjectManager.getInstance().saveProject(project);
                 } else {
-                    source.sendError(Text.translatable("svcntrl.msg.failed_to_apply_patch_snapshot"));
+                    source.sendError(Lang.translatable("svcntrl.msg.failed_to_apply_patch_snapshot"));
                 }
             }, err -> {
                 rollbackSnapshot(project, branchName, autoId, true);
-                    source.sendError(Text.translatable("svcntrl.msg.failed_to_save", err));
+                    source.sendError(Lang.translatable("svcntrl.msg.failed_to_save", err));
             });
         } else {
             boolean success = AreaSerializer.restorePatchArea(player, world, project, branchName, category, targetId, branchName, category, baseId, excludeIntersections, null, null);
             if (success) {
-                source.sendFeedback(() -> Text.translatable("svcntrl.msg.applying_patch_entities_fully").formatted(Formatting.GREEN), false);
+                source.sendFeedback(() -> Lang.translatable("svcntrl.msg.applying_patch_entities_fully").formatted(Formatting.GREEN), false);
                 ProjectManager.getInstance().saveProject(project);
             } else {
-                source.sendError(Text.translatable("svcntrl.msg.failed_to_apply_patch_snapshot"));
+                source.sendError(Lang.translatable("svcntrl.msg.failed_to_apply_patch_snapshot"));
             }
         }
         return 1;
@@ -1181,39 +1199,47 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         
         ServerWorld world = getProjectWorld(source, project);
         if (world == null) return 0;
 
-        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (project.isLocked()) { source.sendError(Lang.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+
+        if (!project.hasBranch(targetBranch)) { source.sendError(Lang.translatable("svcntrl.msg.branch_not_found", targetBranch)); return 0; }
+        if (!project.hasBranch(baseBranch)) { source.sendError(Lang.translatable("svcntrl.msg.branch_not_found", baseBranch)); return 0; }
+
+        java.nio.file.Path targetPath = ProjectManager.getInstance().getSnapshotPath(project, targetBranch, category, targetId);
+        if (!java.nio.file.Files.exists(targetPath)) { source.sendError(Lang.translatable("svcntrl.msg.target_snapshot_missing", targetBranch, category, targetId)); return 0; }
+        java.nio.file.Path basePath = ProjectManager.getInstance().getSnapshotPath(project, baseBranch, category, baseId);
+        if (!java.nio.file.Files.exists(basePath)) { source.sendError(Lang.translatable("svcntrl.msg.target_snapshot_missing", baseBranch, category, baseId)); return 0; }
 
         String currentBranch = project.getCurrentBranchName();
         if (!noSave && com.svcntrl.config.SvcntrlConfig.getInstance().autoSaveOnRestore) {
             int autoId = project.addAutoSnapshot(currentBranch, "Auto-save before cross patch (Target: " + targetBranch + ":" + targetId + " Base: " + baseBranch + ":" + baseId + ")", player.getUuid(), player.getName().getString());
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.creating_auto_save_before_cros").formatted(Formatting.YELLOW), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.creating_auto_save_before_cros").formatted(Formatting.YELLOW), false);
             
             AreaSerializer.saveAreaAsync(player, world, project, currentBranch, "auto", autoId, () -> {
                 project.trimAutoSnapshots(currentBranch, category.equals("auto") ? new int[]{targetBranch.equals(currentBranch) ? targetId : -1, baseBranch.equals(currentBranch) ? baseId : -1} : new int[0]);
                 boolean success = AreaSerializer.restorePatchArea(player, world, project, targetBranch, category, targetId, baseBranch, category, baseId, excludeIntersections, null, null);
                 if (success) {
-                    source.sendFeedback(() -> Text.translatable("svcntrl.msg.cross_patch_applied_successful").formatted(Formatting.GREEN), false);
+                    source.sendFeedback(() -> Lang.translatable("svcntrl.msg.cross_patch_applied_successful").formatted(Formatting.GREEN), false);
                     ProjectManager.getInstance().saveProject(project);
                 } else {
-                    source.sendError(Text.translatable("svcntrl.msg.failed_to_apply_patch_snapshot"));
+                    source.sendError(Lang.translatable("svcntrl.msg.failed_to_apply_patch_snapshot"));
                 }
             }, err -> {
                 rollbackSnapshot(project, currentBranch, autoId, true);
-                    source.sendError(Text.translatable("svcntrl.msg.failed_autosave_patch", err));
+                    source.sendError(Lang.translatable("svcntrl.msg.failed_autosave_patch", err));
             });
         } else {
             boolean success = AreaSerializer.restorePatchArea(player, world, project, targetBranch, category, targetId, baseBranch, category, baseId, excludeIntersections, null, null);
             if (success) {
-                source.sendFeedback(() -> Text.translatable("svcntrl.msg.cross_patch_applied_successful").formatted(Formatting.GREEN), false);
+                source.sendFeedback(() -> Lang.translatable("svcntrl.msg.cross_patch_applied_successful").formatted(Formatting.GREEN), false);
                 ProjectManager.getInstance().saveProject(project);
             } else {
-                source.sendError(Text.translatable("svcntrl.msg.failed_to_apply_patch_snapshot"));
+                source.sendError(Lang.translatable("svcntrl.msg.failed_to_apply_patch_snapshot"));
             }
         }
         return 1;
@@ -1223,12 +1249,12 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (project.isLocked()) { source.sendError(Lang.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
 
         String targetBranch = (branchArg != null && !branchArg.isEmpty()) ? branchArg.toLowerCase(java.util.Locale.ROOT) : project.getCurrentBranchName();
-        if (!project.hasBranch(targetBranch)) { source.sendError(Text.translatable("svcntrl.msg.branch_not_found", targetBranch)); return 0; }
+        if (!project.hasBranch(targetBranch)) { source.sendError(Lang.translatable("svcntrl.msg.branch_not_found", targetBranch)); return 0; }
 
         PreviewManager.getInstance().startPreview(player, project, targetBranch, category, id);
         return 1;
@@ -1238,11 +1264,11 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         if (!PreviewManager.getInstance().hasPreview(player.getUuid())) {
-            source.sendError(Text.translatable("svcntrl.msg.not_previewing"));
+            source.sendError(Lang.translatable("svcntrl.msg.not_previewing"));
             return 0;
         }
         PreviewManager.getInstance().stopPreview(player);
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.preview_stopped").formatted(Formatting.GRAY), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.preview_stopped").formatted(Formatting.GRAY), false);
         return 1;
     }
 
@@ -1250,12 +1276,12 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (project.isLocked()) { source.sendError(Lang.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         
         String targetBranch = (branchArg != null && !branchArg.isEmpty()) ? branchArg.toLowerCase(java.util.Locale.ROOT) : project.getCurrentBranchName();
-        if (!project.hasBranch(targetBranch)) { source.sendError(Text.translatable("svcntrl.msg.branch_not_found", targetBranch)); return 0; }
+        if (!project.hasBranch(targetBranch)) { source.sendError(Lang.translatable("svcntrl.msg.branch_not_found", targetBranch)); return 0; }
 
         ExportManager.exportSnapshot(project, targetBranch, category, id, player);
         return 1;
@@ -1265,12 +1291,12 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (project.isLocked()) { source.sendError(Lang.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         
         String targetBranch = (branchArg != null && !branchArg.isEmpty()) ? branchArg.toLowerCase(java.util.Locale.ROOT) : project.getCurrentBranchName();
-        if (!project.hasBranch(targetBranch)) { source.sendError(Text.translatable("svcntrl.msg.branch_not_found", targetBranch)); return 0; }
+        if (!project.hasBranch(targetBranch)) { source.sendError(Lang.translatable("svcntrl.msg.branch_not_found", targetBranch)); return 0; }
 
         ExportManager.exportDiff(project, targetBranch, category, targetId, targetBranch, category, baseId, player);
         return 1;
@@ -1282,9 +1308,9 @@ public class SvcntrlCommands {
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-        if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project == null) { source.sendError(Lang.translatable("svcntrl.msg.no_active_project")); return 0; }
+        if (project.isLocked()) { source.sendError(Lang.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
 
         ExportManager.exportDiff(project, targetBranch, category, targetId, baseBranch, category, baseId, player);
         return 1;
@@ -1295,15 +1321,15 @@ public class SvcntrlCommands {
         if (player == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
         if (project == null) return 0;
-        if (project.isLocked()) { source.sendError(Text.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
-        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Text.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
+        if (project.isLocked()) { source.sendError(Lang.translatable("svcntrl.msg.project_or_an_overlapping_proj")); return 0; }
+        if (!project.isMember(player.getUuid()) && !hasAdminBypass(source)) { source.sendError(Lang.translatable("svcntrl.msg.you_don_t_have_access")); return 0; }
         ExportManager.exportProjectFull(project, player);
         return 1;
     }
 
     private static int executeReload(ServerCommandSource source) {
         com.svcntrl.config.SvcntrlConfig.load();
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.svcntrl_config_reloaded").formatted(Formatting.GREEN), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.svcntrl_config_reloaded").formatted(Formatting.GREEN), false);
         return 1;
     }
 
@@ -1313,13 +1339,13 @@ public class SvcntrlCommands {
         
         if ("reset".equalsIgnoreCase(choice)) {
             com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), null);
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.upload_pref_reset").formatted(Formatting.GREEN), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.upload_pref_reset").formatted(Formatting.GREEN), false);
             return 1;
         }
 
         if ("never".equalsIgnoreCase(choice)) {
             com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), false);
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.upload_pref_disabled").formatted(Formatting.GREEN), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.upload_pref_disabled").formatted(Formatting.GREEN), false);
             com.svcntrl.core.ExportManager.consumePendingUpload(player.getUuid()); // discard if any
             resyncCommands(player);
             return 1;
@@ -1327,7 +1353,7 @@ public class SvcntrlCommands {
 
         if ("always".equalsIgnoreCase(choice)) {
             com.svcntrl.data.ProjectManager.getInstance().setAutoUploadPref(player.getUuid(), true);
-            source.sendFeedback(() -> Text.translatable("svcntrl.msg.upload_pref_enabled").formatted(Formatting.GREEN), false);
+            source.sendFeedback(() -> Lang.translatable("svcntrl.msg.upload_pref_enabled").formatted(Formatting.GREEN), false);
             // Fallthrough to upload if there is a pending file
         }
 
@@ -1335,7 +1361,7 @@ public class SvcntrlCommands {
 
         if ("no".equalsIgnoreCase(choice)) {
             if (file != null) {
-                source.sendFeedback(() -> Text.translatable("svcntrl.msg.upload_skipped").formatted(Formatting.YELLOW), false);
+                source.sendFeedback(() -> Lang.translatable("svcntrl.msg.upload_skipped").formatted(Formatting.YELLOW), false);
             }
             resyncCommands(player);
             return 1;
@@ -1343,13 +1369,13 @@ public class SvcntrlCommands {
 
         if (file == null || !java.nio.file.Files.exists(file)) {
             if ("yes".equalsIgnoreCase(choice)) {
-                source.sendError(Text.translatable("svcntrl.msg.no_valid_export_file_pending_f"));
+                source.sendError(Lang.translatable("svcntrl.msg.no_valid_export_file_pending_f"));
                 return 0;
             }
             return 1; // 'always' with no file is valid (we just enabled it)
         }
 
-        source.sendFeedback(() -> Text.translatable("svcntrl.msg.uploading_to_public", file.getFileName().toString()).formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> Lang.translatable("svcntrl.msg.uploading_to_public", file.getFileName().toString()).formatted(Formatting.YELLOW), false);
         resyncCommands(player);
         com.svcntrl.SvcntrlMod.runAsync(() -> {
             com.svcntrl.core.ExportManager.doActualUpload(file, player);

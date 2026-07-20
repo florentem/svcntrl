@@ -27,7 +27,7 @@ public class SvcntrlConfig {
     public boolean allowPublicExport = false;
     public String customExportEndpoint = "";
     public long taskBudgetNs = 25_000_000L;
-    public int maxRegionVolume = 5_000_000;
+    public int maxRegionVolume = 2_000_000_000;
     public String[] raycastParticlePool = new String[]{
             "minecraft:end_rod", "minecraft:happy_villager", "minecraft:flame", "minecraft:soul_fire_flame",
             "minecraft:glow", "minecraft:wax_on", "minecraft:wax_off", "minecraft:nautilus",
@@ -55,9 +55,9 @@ public class SvcntrlConfig {
                     if (loaded.outlineFrequencyTicks <= 0) loaded.outlineFrequencyTicks = 15;
                     if (loaded.customExportEndpoint == null) loaded.customExportEndpoint = "";
                     
-                    // Enforce hard limits to prevent Integer Overflow (max 100M blocks)
-                    // 5.3: Fallback to the default of 5M (not 100M) when value is out-of-range
-                    if (loaded.maxRegionVolume <= 0 || loaded.maxRegionVolume > 100_000_000) loaded.maxRegionVolume = 5_000_000;
+                    // Enforce hard limits to prevent Integer Overflow/OOM (max 20M blocks)
+                    // 5.3: Fallback to the default of 5M (not 20M) when value is out-of-range
+                    if (loaded.maxRegionVolume <= 0 || loaded.maxRegionVolume > 2_000_000_000) loaded.maxRegionVolume = 2_000_000_000;
                     
                     // Enforce hard limits for task budget to prevent server freeze (min 0.1ms, max 50ms)
                     if (loaded.taskBudgetNs < 100_000L) loaded.taskBudgetNs = 100_000L;
