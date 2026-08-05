@@ -3,8 +3,7 @@ package com.svcntrl.data;
 import com.google.gson.*;
 import com.svcntrl.SvcntrlMod;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.minecraft.util.math.BlockPos;
-
+import net.minecraft.core.BlockPos;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -175,7 +174,7 @@ public class ProjectManager {
 
     public void loadProjects(net.minecraft.server.MinecraftServer server) {
         if (dataDir == null) {
-            dataDir = server.getSavePath(net.minecraft.util.WorldSavePath.ROOT).resolve("svcntrl_data");
+            dataDir = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("svcntrl_data");
         }
 
         try {

@@ -1,8 +1,7 @@
 package com.svcntrl.data;
 
-import net.minecraft.util.math.BlockPos;
-
 import java.util.*;
+import net.minecraft.core.BlockPos;
 
 public class Project {
 
@@ -157,7 +156,7 @@ public class Project {
         return (long)(corner2.getX() - corner1.getX() + 1) * (long)(corner2.getY() - corner1.getY() + 1) * (long)(corner2.getZ() - corner1.getZ() + 1);
     }
 
-    public boolean contains(net.minecraft.util.math.BlockPos pos) {
+    public boolean contains(net.minecraft.core.BlockPos pos) {
         return pos.getX() >= corner1.getX() && pos.getX() <= corner2.getX()
             && pos.getY() >= corner1.getY() && pos.getY() <= corner2.getY()
             && pos.getZ() >= corner1.getZ() && pos.getZ() <= corner2.getZ();

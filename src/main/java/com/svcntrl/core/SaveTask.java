@@ -3,20 +3,19 @@ package com.svcntrl.core;
 import com.svcntrl.SvcntrlMod;
 import com.svcntrl.data.Project;
 import com.svcntrl.data.ProjectManager;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.AbstractDecorationEntity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.*;
-import net.minecraft.storage.NbtWriteView;
-import net.minecraft.registry.Registries;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.ErrorReporter;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.HangingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.phys.AABB;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,32 +25,32 @@ import java.util.List;
 import java.util.Map;
 
 public class SaveTask implements TaskScheduler.TickTask {
-    private final ServerWorld world;
+    private final ServerLevel world;
     private final Project project;
     private final String branchName;
     private final String category;
     private final int snapshotId;
     private final Runnable onSuccess;
     private final java.util.function.Consumer<String> onError;
-    private final net.minecraft.server.network.ServerPlayerEntity player;
+    private final net.minecraft.server.level.ServerPlayer player;
 
     private final BlockPos min;
     private final BlockPos max;
     private final int width, height, length;
-    private final NbtCompound root;
+    private final CompoundTag root;
     
     // Memory-efficient storage
     private final int[] blockData;
     private final Map<BlockState, Integer> statePaletteMap = new HashMap<>();
-    private final List<NbtCompound> paletteList = new ArrayList<>();
-    private final NbtList blockEntitiesList = new NbtList();
+    private final List<CompoundTag> paletteList = new ArrayList<>();
+    private final ListTag blockEntitiesList = new ListTag();
 
     private int cx, cy, cz;
     private boolean finishedBlocks = false;
     private int processed = 0;
     private long lastMessageTime = 0;
 
-    public SaveTask(net.minecraft.server.network.ServerPlayerEntity player, ServerWorld world, Project project, String branchName, String category, int snapshotId, Runnable onSuccess, java.util.function.Consumer<String> onError) {
+    public SaveTask(net.minecraft.server.level.ServerPlayer player, ServerLevel world, Project project, String branchName, String category, int snapshotId, Runnable onSuccess, java.util.function.Consumer<String> onError) {
         this.player = player;
         this.world = world;
         this.project = project;
@@ -74,7 +73,7 @@ public class SaveTask implements TaskScheduler.TickTask {
         this.cy = min.getY();
         this.cz = min.getZ();
 
-        this.root = new NbtCompound();
+        this.root = new CompoundTag();
         root.putInt("Version", 2); // Version 2 uses Palette + IntArray
         root.putInt("MinX", min.getX());
         root.putInt("MinY", min.getY());
@@ -90,10 +89,10 @@ public class SaveTask implements TaskScheduler.TickTask {
             return existing;
         }
 
-        Identifier blockId = Registries.BLOCK.getId(state.getBlock());
+        Identifier blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         String idStr = blockId.toString();
         
-        NbtCompound propsNbt = new NbtCompound();
+        CompoundTag propsNbt = new CompoundTag();
         state.getProperties().forEach(property -> {
             propsNbt.putString(property.getName(), AreaSerializer.getPropertyValueString(state, property));
         });
@@ -101,7 +100,7 @@ public class SaveTask implements TaskScheduler.TickTask {
         int newIndex = paletteList.size();
         statePaletteMap.put(state, newIndex);
         
-        NbtCompound entry = new NbtCompound();
+        CompoundTag entry = new CompoundTag();
         entry.putString("BlockId", idStr);
         if (!propsNbt.isEmpty()) {
             entry.put("Properties", propsNbt);
@@ -117,8 +116,8 @@ public class SaveTask implements TaskScheduler.TickTask {
 
         long startTime = System.nanoTime();
 
-        BlockPos.Mutable mutable = new BlockPos.Mutable();
-        net.minecraft.world.chunk.WorldChunk cachedChunk = null;
+        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
+        net.minecraft.world.level.chunk.LevelChunk cachedChunk = null;
         int cachedChunkX = Integer.MIN_VALUE;
         int cachedChunkZ = Integer.MIN_VALUE;
 
@@ -130,12 +129,12 @@ public class SaveTask implements TaskScheduler.TickTask {
                     int currentChunkX = cx >> 4;
                     int currentChunkZ = cz >> 4;
                     if (cachedChunk == null || cachedChunkX != currentChunkX || cachedChunkZ != currentChunkZ) {
-                        net.minecraft.world.chunk.Chunk chunk = world.getChunk(currentChunkX, currentChunkZ, net.minecraft.world.chunk.ChunkStatus.FULL, false);
+                        net.minecraft.world.level.chunk.ChunkAccess chunk = world.getChunk(currentChunkX, currentChunkZ, net.minecraft.world.level.chunk.status.ChunkStatus.FULL, false);
                         if (chunk == null) {
-                            world.getChunkManager().addTicket(net.minecraft.server.world.ChunkTicketType.UNKNOWN, new net.minecraft.util.math.ChunkPos(currentChunkX, currentChunkZ), 2);
+                            world.getChunkSource().addTicketWithRadius(net.minecraft.server.level.TicketType.UNKNOWN, new net.minecraft.world.level.ChunkPos(currentChunkX, currentChunkZ), 2);
                             return false;
                         }
-                        cachedChunk = (net.minecraft.world.chunk.WorldChunk) chunk;
+                        cachedChunk = (net.minecraft.world.level.chunk.LevelChunk) chunk;
                         cachedChunkX = currentChunkX;
                         cachedChunkZ = currentChunkZ;
                         
@@ -153,12 +152,12 @@ public class SaveTask implements TaskScheduler.TickTask {
 
                     BlockEntity blockEntity = cachedChunk.getBlockEntity(mutable);
                     if (blockEntity != null) {
-                        NbtCompound blockEntityNbt = blockEntity.createNbtWithIdentifyingData(world.getRegistryManager());
+                        CompoundTag blockEntityNbt = blockEntity.saveWithFullMetadata(world.registryAccess());
                         blockEntityNbt.remove("x");
                         blockEntityNbt.remove("y");
                         blockEntityNbt.remove("z");
                         
-                        NbtCompound entry = new NbtCompound();
+                        CompoundTag entry = new CompoundTag();
                         entry.putInt("X", rx);
                         entry.putInt("Y", ry);
                         entry.putInt("Z", rz);
@@ -170,11 +169,11 @@ public class SaveTask implements TaskScheduler.TickTask {
                     cx++;
 
                     if ((processed & 0xFF) == 0 && (System.nanoTime() - startTime) > maxTimeNs) {
-                        if (player != null && !player.isDisconnected()) {
+                        if (player != null && !player.hasDisconnected()) {
                             long now = System.currentTimeMillis();
                             if (now - lastMessageTime > 500) {
                                 float percent = (float) processed / (width * height * length) * 100f;
-                                player.sendMessage(net.minecraft.text.Text.literal(String.format("Saving Blocks: %.1f%%", percent)).formatted(net.minecraft.util.Formatting.GREEN), true);
+                                player.sendOverlayMessage(net.minecraft.network.chat.Component.literal(String.format("Saving Blocks: %.1f%%", percent)).withStyle(net.minecraft.ChatFormatting.GREEN));
                                 lastMessageTime = now;
                             }
                         }
@@ -189,8 +188,8 @@ public class SaveTask implements TaskScheduler.TickTask {
         }
 
         finishedBlocks = true;
-        if (player != null && !player.isDisconnected()) {
-            player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.saving_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
+        if (player != null && !player.hasDisconnected()) {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("svcntrl.msg.saving_100_0").withStyle(net.minecraft.ChatFormatting.GREEN));
         }
         finishSave();
         return true;
@@ -199,8 +198,8 @@ public class SaveTask implements TaskScheduler.TickTask {
     @Override
     public void onCancel(Throwable t) {
         ProjectManager.getInstance().setProjectLocked(project, false);
-        if (player != null && !player.isDisconnected()) {
-            player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.save_failed_cancelled").formatted(net.minecraft.util.Formatting.RED), false);
+        if (player != null && !player.hasDisconnected()) {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("svcntrl.msg.save_failed_cancelled").withStyle(net.minecraft.ChatFormatting.RED));
         }
         if (onError != null) {
             onError.accept(t.getMessage());
@@ -209,8 +208,8 @@ public class SaveTask implements TaskScheduler.TickTask {
 
     private void finishSave() {
         // Serialize Palette
-        NbtList pList = new NbtList();
-        for (NbtCompound comp : paletteList) {
+        ListTag pList = new ListTag();
+        for (CompoundTag comp : paletteList) {
             pList.add(comp);
         }
         root.put("Palette", pList);
@@ -219,20 +218,20 @@ public class SaveTask implements TaskScheduler.TickTask {
         root.putIntArray("BlockData", blockData);
         root.put("BlockEntities", blockEntitiesList);
 
-        NbtList entityList = new NbtList();
-        Box areaBounds = new Box(min.getX(), min.getY(), min.getZ(),
+        ListTag entityList = new ListTag();
+        AABB areaBounds = new AABB(min.getX(), min.getY(), min.getZ(),
                 max.getX() + 1, max.getY() + 1, max.getZ() + 1);
 
-        List<Entity> entities = world.getOtherEntities(null, areaBounds, entity -> !(entity instanceof PlayerEntity));
+        List<Entity> entities = world.getEntities((net.minecraft.world.entity.Entity) null, areaBounds, entity -> !(entity instanceof Player));
         for (Entity entity : entities) {
-            if (entity.hasVehicle()) continue; // Let the vehicle save its passengers
+            if (entity.isPassenger()) continue; // Let the vehicle save its passengers
             
-            NbtWriteView writeView = NbtWriteView.create(ErrorReporter.EMPTY);
-            if (entity.saveData(writeView)) {
-                NbtCompound entityNbt = writeView.getNbt();
+            TagValueOutput writeView = TagValueOutput.createWithoutContext(ProblemReporter.DISCARDING);
+            if (entity.save(writeView)) {
+                CompoundTag entityNbt = writeView.buildResult();
                 
                 if (!entityNbt.contains("id")) {
-                    Identifier entityId = Registries.ENTITY_TYPE.getId(entity.getType());
+                    Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
                     if (entityId != null) {
                         entityNbt.putString("id", entityId.toString());
                     }
@@ -242,8 +241,8 @@ public class SaveTask implements TaskScheduler.TickTask {
                 entityNbt.putDouble("svcntrl_RelY", entity.getY() - min.getY());
                 entityNbt.putDouble("svcntrl_RelZ", entity.getZ() - min.getZ());
 
-                if (entity instanceof AbstractDecorationEntity decoration) {
-                    BlockPos attachPos = decoration.getBlockPos();
+                if (entity instanceof HangingEntity decoration) {
+                    BlockPos attachPos = decoration.blockPosition();
                     entityNbt.putInt("svcntrl_AttachRelX", attachPos.getX() - min.getX());
                     entityNbt.putInt("svcntrl_AttachRelY", attachPos.getY() - min.getY());
                     entityNbt.putInt("svcntrl_AttachRelZ", attachPos.getZ() - min.getZ());

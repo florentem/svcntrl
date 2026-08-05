@@ -1,21 +1,21 @@
 package com.svcntrl.util;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class BlockUtils {
     /**
      * Applies block state properties from NBT to a BlockState.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static BlockState applyProperties(BlockState state, NbtCompound propsNbt) {
-        for (String key : propsNbt.getKeys()) {
-            net.minecraft.state.property.Property property = state.getBlock().getStateManager().getProperty(key);
+    public static BlockState applyProperties(BlockState state, CompoundTag propsNbt) {
+        for (String key : propsNbt.keySet()) {
+            net.minecraft.world.level.block.state.properties.Property property = state.getBlock().getStateDefinition().getProperty(key);
             if (property != null) {
-                String value = propsNbt.getString(key, "");
-                java.util.Optional<?> parsed = property.parse(value);
+                String value = propsNbt.getStringOr(key, "");
+                java.util.Optional<?> parsed = property.getValue(value);
                 if (parsed.isPresent()) {
-                    state = state.with(property, (Comparable) parsed.get());
+                    state = state.setValue(property, (Comparable) parsed.get());
                 }
             }
         }

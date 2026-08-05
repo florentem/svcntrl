@@ -3,17 +3,16 @@ package com.svcntrl.core;
 import com.svcntrl.data.Project;
 import com.svcntrl.data.ProjectManager;
 import com.svcntrl.config.SvcntrlConfig;
-import net.minecraft.network.packet.s2c.play.ParticleS2CPacket;
-import net.minecraft.particle.ParticleType;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
 import java.util.HashSet;
@@ -60,10 +59,10 @@ public class UXManager {
         return raycastPlayers.contains(uuid);
     }
 
-    public Project getProjectLookingAt(ServerPlayerEntity player) {
-        Vec3d cameraPos = player.getCameraPosVec(1.0F);
-        Vec3d rotationVec = player.getRotationVec(1.0F);
-        Vec3d rayEnd = cameraPos.add(rotationVec.multiply(100.0D));
+    public Project getProjectLookingAt(ServerPlayer player) {
+        Vec3 cameraPos = player.getEyePosition(1.0F);
+        Vec3 rotationVec = player.getViewVector(1.0F);
+        Vec3 rayEnd = cameraPos.add(rotationVec.scale(100.0D));
 
         Project bestHitMatch = null;
         double minHitDistance = Double.MAX_VALUE;
@@ -72,7 +71,7 @@ public class UXManager {
         Project bestInsideMatch = null;
         long minInsideVolume = Long.MAX_VALUE;
 
-        String worldId = player.getEntityWorld().getRegistryKey().getValue().toString();
+        String worldId = player.level().dimension().identifier().toString();
         for (Project project : ProjectManager.getInstance().getAllProjects()) {
             if (!project.getWorldId().equals(worldId)) continue;
             
@@ -82,7 +81,7 @@ public class UXManager {
             double dz = Math.max(0, Math.max(project.getMin().getZ() - cameraPos.z, cameraPos.z - (project.getMax().getZ() + 1.0)));
             if (dx * dx + dy * dy + dz * dz > 10000.0) continue; // Ray length is 100, squared is 10000
 
-            net.minecraft.util.math.Box box = new net.minecraft.util.math.Box(
+            net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(
                 project.getMin().getX(), project.getMin().getY(), project.getMin().getZ(),
                 project.getMax().getX() + 1.0, project.getMax().getY() + 1.0, project.getMax().getZ() + 1.0
             );
@@ -97,9 +96,9 @@ public class UXManager {
                     bestInsideMatch = project;
                 }
             } else {
-                java.util.Optional<Vec3d> intersection = box.raycast(cameraPos, rayEnd);
+                java.util.Optional<Vec3> intersection = box.clip(cameraPos, rayEnd);
                 if (intersection.isPresent()) {
-                    double dist = cameraPos.squaredDistanceTo(intersection.get());
+                    double dist = cameraPos.distanceToSqr(intersection.get());
                     if (dist < minHitDistance - 0.1 || (Math.abs(dist - minHitDistance) <= 0.1 && volume < minHitVolume)) {
                         minHitDistance = dist;
                         minHitVolume = volume;
@@ -116,22 +115,22 @@ public class UXManager {
 
         // Action bar for previewing players (every 10 ticks = 0.5 sec)
         if (tickCounter % 10 == 0) {
-            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                if (PreviewManager.getInstance().hasPreview(player.getUuid())) {
-                    player.sendMessage(Text.translatable("svcntrl.msg.you_are_in_preview_mode_type_s").formatted(Formatting.AQUA, Formatting.BOLD), true);
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                if (PreviewManager.getInstance().hasPreview(player.getUUID())) {
+                    player.sendOverlayMessage(Component.translatable("svcntrl.msg.you_are_in_preview_mode_type_s").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
                 }
             }
         }
 
         // Raycast selection checking (every 2 ticks = 0.1 sec)
         if (tickCounter % 2 == 0) {
-            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                if (raycastPlayers.contains(player.getUuid())) {
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                if (raycastPlayers.contains(player.getUUID())) {
                     Project lookedAt = getProjectLookingAt(player);
                     if (lookedAt != null) {
-                        player.sendMessage(Text.translatable("svcntrl.msg.looking_at").formatted(Formatting.GRAY).append(Text.literal(lookedAt.getName()).formatted(Formatting.AQUA, Formatting.BOLD)).append(Text.translatable("svcntrl.msg.click_to_select").formatted(Formatting.YELLOW)), true);
+                        player.sendOverlayMessage(Component.translatable("svcntrl.msg.looking_at").withStyle(ChatFormatting.GRAY).append(Component.literal(lookedAt.getName()).withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)).append(Component.translatable("svcntrl.msg.click_to_select").withStyle(ChatFormatting.YELLOW)));
                     } else {
-                        player.sendMessage(Text.translatable("svcntrl.msg.looking_at").formatted(Formatting.GRAY).append(Text.translatable("svcntrl.msg.none").formatted(Formatting.DARK_GRAY)), true);
+                        player.sendSystemMessage(Component.translatable("svcntrl.msg.looking_at").withStyle(ChatFormatting.GRAY).append(Component.translatable("svcntrl.msg.none").withStyle(ChatFormatting.DARK_GRAY)));
                     }
                 }
             }
@@ -142,20 +141,20 @@ public class UXManager {
         if (freq <= 0) freq = 15;
         
         if (tickCounter % freq == 0) {
-            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                boolean raycasting = raycastPlayers.contains(player.getUuid());
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                boolean raycasting = raycastPlayers.contains(player.getUUID());
                 if (raycasting) {
                     String[] pool = SvcntrlConfig.getInstance().raycastParticlePool;
-                    String worldId = player.getEntityWorld().getRegistryKey().getValue().toString();
+                    String worldId = player.level().dimension().identifier().toString();
                     for (Project project : ProjectManager.getInstance().getAllProjects()) {
                         if (!project.getWorldId().equals(worldId)) continue;
-                        if (!project.contains(player.getBlockPos()) && player.getBlockPos().getSquaredDistance(new net.minecraft.util.math.BlockPos((project.getMin().getX() + project.getMax().getX()) / 2, (project.getMin().getY() + project.getMax().getY()) / 2, (project.getMin().getZ() + project.getMax().getZ()) / 2)) > 16384) continue;
+                        if (!project.contains(player.blockPosition()) && player.blockPosition().distSqr(new net.minecraft.core.BlockPos((project.getMin().getX() + project.getMax().getX()) / 2, (project.getMin().getY() + project.getMax().getY()) / 2, (project.getMin().getZ() + project.getMax().getZ()) / 2)) > 16384) continue;
                         int index = (project.getName().hashCode() & 0x7fffffff) % pool.length;
                         spawnOutlineParticles(player, project, pool[index]);
                     }
-                } else if (outlinePlayers.contains(player.getUuid())) {
-                    Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-                    if (project != null && project.getWorldId().equals(player.getEntityWorld().getRegistryKey().getValue().toString())) {
+                } else if (outlinePlayers.contains(player.getUUID())) {
+                    Project project = ProjectManager.getInstance().getActiveProject(player.getUUID());
+                    if (project != null && project.getWorldId().equals(player.level().dimension().identifier().toString())) {
                         spawnOutlineParticles(player, project, SvcntrlConfig.getInstance().outlineParticle);
                     }
                 }
@@ -163,7 +162,7 @@ public class UXManager {
         }
     }
 
-    private void spawnOutlineParticles(ServerPlayerEntity player, Project project, String particleStr) {
+    private void spawnOutlineParticles(ServerPlayer player, Project project, String particleStr) {
         BlockPos pos1 = project.getCorner1();
         BlockPos pos2 = project.getCorner2();
         if (pos1 == null || pos2 == null) return;
@@ -185,14 +184,14 @@ public class UXManager {
         double stepY = Math.max(2.0, lengthY / maxParticlesPerEdge);
         double stepZ = Math.max(2.0, lengthZ / maxParticlesPerEdge);
 
-        ParticleType<?> type = Registries.PARTICLE_TYPE.get(Identifier.of(particleStr));
+        ParticleType<?> type = BuiltInRegistries.PARTICLE_TYPE.getValue(Identifier.parse(particleStr));
         if (type == null) type = ParticleTypes.FLAME;
         
-        net.minecraft.particle.ParticleEffect effect;
-        if (type instanceof net.minecraft.particle.ParticleEffect) {
-            effect = (net.minecraft.particle.ParticleEffect) type;
+        net.minecraft.core.particles.ParticleOptions effect;
+        if (type instanceof net.minecraft.core.particles.ParticleOptions) {
+            effect = (net.minecraft.core.particles.ParticleOptions) type;
         } else {
-            effect = (net.minecraft.particle.ParticleEffect) ParticleTypes.FLAME;
+            effect = (net.minecraft.core.particles.ParticleOptions) ParticleTypes.FLAME;
         }
 
         // Bottom and Top rects
@@ -217,7 +216,7 @@ public class UXManager {
         }
     }
 
-    private void sendParticle(ServerPlayerEntity player, double x, double y, double z, net.minecraft.particle.ParticleEffect effect) {
-        ((net.minecraft.server.world.ServerWorld)player.getEntityWorld()).spawnParticles(player, effect, true, true, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
+    private void sendParticle(ServerPlayer player, double x, double y, double z, net.minecraft.core.particles.ParticleOptions effect) {
+        ((net.minecraft.server.level.ServerLevel)player.level()).sendParticles(player, effect, true, true, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
     }
 }
