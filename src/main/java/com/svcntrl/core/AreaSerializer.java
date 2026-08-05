@@ -662,7 +662,7 @@ public class AreaSerializer {
                         }
                     }
 
-                    EntityType.loadEntityRecursive(entityNbt, world, EntitySpawnReason.STRUCTURE, (entity) -> {
+                    EntityType.loadEntityRecursive(entityNbt, world, new net.minecraft.world.entity.EntitySpawnRequest(EntitySpawnReason.STRUCTURE, true), (entity) -> {
                         entity.setUUID(java.util.UUID.randomUUID());
                         entity.setPos(absX, absY, absZ);
                         world.addFreshEntityWithPassengers(entity);
