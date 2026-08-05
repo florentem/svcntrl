@@ -63,11 +63,11 @@ public class PendingCreateManager {
             return false;
         }
 
-        if (state.dimension != null && !state.dimension.equals(player.getWorld().getRegistryKey().getValue().toString())) {
+        if (state.dimension != null && !state.dimension.equals(player.getEntityWorld().getRegistryKey().getValue().toString())) {
             state.pos2 = null; // Reset pos2 if dimension changed
         }
         state.pos1 = pos;
-        state.dimension = player.getWorld().getRegistryKey().getValue().toString();
+        state.dimension = player.getEntityWorld().getRegistryKey().getValue().toString();
         player.sendMessage(Text.translatable("svcntrl.msg.pos1_set", pos.toShortString(), state.dimension).formatted(Formatting.GREEN), false);
         checkCompletion(player, state);
         return true;
@@ -83,11 +83,11 @@ public class PendingCreateManager {
             return false;
         }
 
-        if (state.dimension != null && !state.dimension.equals(player.getWorld().getRegistryKey().getValue().toString())) {
+        if (state.dimension != null && !state.dimension.equals(player.getEntityWorld().getRegistryKey().getValue().toString())) {
             state.pos1 = null; // Reset pos1 if dimension changed
         }
         state.pos2 = pos;
-        state.dimension = player.getWorld().getRegistryKey().getValue().toString();
+        state.dimension = player.getEntityWorld().getRegistryKey().getValue().toString();
         player.sendMessage(Text.translatable("svcntrl.msg.pos2_set", pos.toShortString(), state.dimension).formatted(Formatting.GREEN), false);
         checkCompletion(player, state);
         return true;
@@ -106,7 +106,7 @@ public class PendingCreateManager {
                 return;
             }
 
-            String dim = player.getWorld().getRegistryKey().getValue().toString();
+            String dim = player.getEntityWorld().getRegistryKey().getValue().toString();
             int minX = Math.min(state.pos1.getX(), state.pos2.getX());
             int maxX = Math.max(state.pos1.getX(), state.pos2.getX());
             int minY = Math.min(state.pos1.getY(), state.pos2.getY());
@@ -121,7 +121,7 @@ public class PendingCreateManager {
                     player.getName().getString(),
                     state.pos1,
                     state.pos2,
-                    player.getWorld().getRegistryKey().getValue().toString()
+                    player.getEntityWorld().getRegistryKey().getValue().toString()
             );
 
             boolean overlaps = false;

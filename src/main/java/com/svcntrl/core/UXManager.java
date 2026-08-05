@@ -72,7 +72,7 @@ public class UXManager {
         Project bestInsideMatch = null;
         long minInsideVolume = Long.MAX_VALUE;
 
-        String worldId = player.getWorld().getRegistryKey().getValue().toString();
+        String worldId = player.getEntityWorld().getRegistryKey().getValue().toString();
         for (Project project : ProjectManager.getInstance().getAllProjects()) {
             if (!project.getWorldId().equals(worldId)) continue;
             
@@ -146,7 +146,7 @@ public class UXManager {
                 boolean raycasting = raycastPlayers.contains(player.getUuid());
                 if (raycasting) {
                     String[] pool = SvcntrlConfig.getInstance().raycastParticlePool;
-                    String worldId = player.getWorld().getRegistryKey().getValue().toString();
+                    String worldId = player.getEntityWorld().getRegistryKey().getValue().toString();
                     for (Project project : ProjectManager.getInstance().getAllProjects()) {
                         if (!project.getWorldId().equals(worldId)) continue;
                         if (!project.contains(player.getBlockPos()) && player.getBlockPos().getSquaredDistance(new net.minecraft.util.math.BlockPos((project.getMin().getX() + project.getMax().getX()) / 2, (project.getMin().getY() + project.getMax().getY()) / 2, (project.getMin().getZ() + project.getMax().getZ()) / 2)) > 16384) continue;
@@ -155,7 +155,7 @@ public class UXManager {
                     }
                 } else if (outlinePlayers.contains(player.getUuid())) {
                     Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
-                    if (project != null && project.getWorldId().equals(player.getWorld().getRegistryKey().getValue().toString())) {
+                    if (project != null && project.getWorldId().equals(player.getEntityWorld().getRegistryKey().getValue().toString())) {
                         spawnOutlineParticles(player, project, SvcntrlConfig.getInstance().outlineParticle);
                     }
                 }
@@ -218,6 +218,6 @@ public class UXManager {
     }
 
     private void sendParticle(ServerPlayerEntity player, double x, double y, double z, net.minecraft.particle.ParticleEffect effect) {
-        ((net.minecraft.server.world.ServerWorld)player.getWorld()).spawnParticles(player, effect, true, true, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
+        ((net.minecraft.server.world.ServerWorld)player.getEntityWorld()).spawnParticles(player, effect, true, true, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
     }
 }

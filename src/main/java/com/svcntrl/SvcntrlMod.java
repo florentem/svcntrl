@@ -176,11 +176,11 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
     }
 
     private boolean handleRaycastSelection(net.minecraft.entity.player.PlayerEntity player) {
-        if (player.getWorld().isClient()) return false;
+        if (player.getEntityWorld().isClient()) return false;
         if (UXManager.getInstance().isRaycasting(player.getUuid())) {
             com.svcntrl.data.Project project = UXManager.getInstance().getProjectLookingAt((net.minecraft.server.network.ServerPlayerEntity) player);
             if (project != null) {
-                if (!project.isMember(player.getUuid()) && !player.hasPermissionLevel(2)) {
+                if (!project.isMember(player.getUuid()) && !player.getEntityWorld().getServer().getPlayerManager().isOperator(new net.minecraft.server.PlayerConfigEntry(player.getGameProfile()))) {
                     player.sendMessage(Text.translatable("svcntrl.msg.you_don_t_have_access_to_this").formatted(Formatting.RED), false);
                 } else {
                     ProjectManager.getInstance().setActiveProject(player.getUuid(), project.getName());

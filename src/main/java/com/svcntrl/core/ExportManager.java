@@ -158,7 +158,7 @@ public class ExportManager {
 
                 NbtIo.writeCompressed(litematic, filePath);
 
-                if (com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport && player.getServer().isDedicated()) {
+                if (com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport && player.getEntityWorld().getServer().isDedicated()) {
                     player.sendMessage(Text.translatable("svcntrl.msg.uploading_schematic_to_public").formatted(Formatting.YELLOW), false);
 
                     com.svcntrl.SvcntrlMod.runAsync(() -> {
@@ -242,7 +242,7 @@ public class ExportManager {
                             });
                 }
 
-                if (com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport && player != null && player.getServer().isDedicated()) {
+                if (com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport && player != null && player.getEntityWorld().getServer().isDedicated()) {
                     com.svcntrl.SvcntrlMod.runAsync(() -> {
                         uploadToTmpfiles(zipPath, player);
                     });
@@ -480,7 +480,7 @@ public class ExportManager {
 
                 net.minecraft.nbt.NbtIo.writeCompressed(litematic, filePath);
 
-                if (com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport && player.getServer().isDedicated()) {
+                if (com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport && player.getEntityWorld().getServer().isDedicated()) {
                     player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.uploading_diff_schematic_pleas")
                             .formatted(net.minecraft.util.Formatting.YELLOW), false);
 
@@ -722,7 +722,7 @@ public class ExportManager {
         
         player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.export_saved_server", zipPath.getFileName().toString()).formatted(net.minecraft.util.Formatting.GREEN), false);
         
-        if (!com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport || !player.getServer().isDedicated()) {
+        if (!com.svcntrl.config.SvcntrlConfig.getInstance().allowPublicExport || !player.getEntityWorld().getServer().isDedicated()) {
             return;
         }
 

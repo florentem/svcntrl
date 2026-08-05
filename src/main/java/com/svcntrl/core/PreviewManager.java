@@ -140,7 +140,7 @@ public class PreviewManager {
         com.svcntrl.SvcntrlMod.supplyAsync(() -> {
             return AreaSerializer.readSnapshot(project, branchName, category, snapshotId);
         }).thenAccept(root -> {
-            player.getServer().execute(() -> {
+            player.getEntityWorld().getServer().execute(() -> {
                 pendingPreviews.remove(player.getUuid());
                 if (root == null) {
                     player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.failed_to_load_snapshot_for_pr").formatted(net.minecraft.util.Formatting.RED));
@@ -156,9 +156,9 @@ public class PreviewManager {
                     project.getMax().getX() + 1, project.getMax().getY() + 1, project.getMax().getZ() + 1
                 );
                 previewBoundingBoxes.put(player.getUuid(), bounds);
-                previewDimensions.put(player.getUuid(), player.getWorld().getRegistryKey().getValue().toString());
+                previewDimensions.put(player.getUuid(), player.getEntityWorld().getRegistryKey().getValue().toString());
                 
-                List<Entity> realEntities = ((net.minecraft.server.world.ServerWorld)player.getWorld()).getOtherEntities(null, bounds);
+                List<Entity> realEntities = ((net.minecraft.server.world.ServerWorld)player.getEntityWorld()).getOtherEntities(null, bounds);
                 if (!realEntities.isEmpty()) {
                     int[] ids = realEntities.stream()
                         .filter(e -> !(e instanceof net.minecraft.server.network.ServerPlayerEntity))
@@ -182,14 +182,14 @@ public class PreviewManager {
         
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             String expectedDim = previewDimensions.get(player.getUuid());
-            if (expectedDim != null && !expectedDim.equals(player.getWorld().getRegistryKey().getValue().toString())) {
+            if (expectedDim != null && !expectedDim.equals(player.getEntityWorld().getRegistryKey().getValue().toString())) {
                 stopPreview(player);
                 continue;
             }
             
             net.minecraft.util.math.Box bounds = previewBoundingBoxes.get(player.getUuid());
             if (bounds != null) {
-                List<Entity> entities = ((net.minecraft.server.world.ServerWorld)player.getWorld()).getOtherEntities(null, bounds);
+                List<Entity> entities = ((net.minecraft.server.world.ServerWorld)player.getEntityWorld()).getOtherEntities(null, bounds);
                 if (!entities.isEmpty()) {
                     int[] idsToHide = entities.stream()
                         .filter(e -> !(e instanceof net.minecraft.server.network.ServerPlayerEntity) && !isEntityHidden(player, e))
@@ -236,7 +236,7 @@ public class PreviewManager {
         
         // Re-track real entities that were hidden
         if (bounds != null) {
-            List<Entity> realEntities = ((net.minecraft.server.world.ServerWorld)player.getWorld()).getOtherEntities(null, bounds);
+            List<Entity> realEntities = ((net.minecraft.server.world.ServerWorld)player.getEntityWorld()).getOtherEntities(null, bounds);
             for (Entity entity : realEntities) {
                 if (!(entity instanceof net.minecraft.server.network.ServerPlayerEntity)) {
                     player.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket(
@@ -314,7 +314,7 @@ public class PreviewManager {
             int ops = 0;
             int packetsSent = 0;
             long startTime = System.nanoTime();
-            ServerWorld world = player.getWorld();
+            ServerWorld world = player.getEntityWorld();
 
             if (phase == 0) {
                 Map<net.minecraft.util.math.ChunkPos, Map<BlockPos, BlockState>> previewChunks = PreviewManager.getInstance().activePreviews.get(player.getUuid());
@@ -472,7 +472,7 @@ public class PreviewManager {
             int ops = 0;
             int packetsSent = 0;
             long startTime = System.nanoTime();
-            ServerWorld world = player.getWorld();
+            ServerWorld world = player.getEntityWorld();
 
             while (currentIndex < positions.size()) {
                 BlockPos pos = positions.get(currentIndex);

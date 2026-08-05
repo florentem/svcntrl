@@ -25,9 +25,9 @@ public class ServerCommonNetworkHandlerMixin {
 
             Entity entityToHide = null;
             if (packet instanceof EntitySpawnS2CPacket spawnPacket) {
-                entityToHide = ((net.minecraft.server.world.ServerWorld)playHandler.getPlayer().getWorld()).getEntityById(spawnPacket.getEntityId());
+                entityToHide = ((net.minecraft.server.world.ServerWorld)playHandler.getPlayer().getEntityWorld()).getEntityById(spawnPacket.getEntityId());
             } else if (packet instanceof EntityTrackerUpdateS2CPacket trackerPacket) {
-                entityToHide = ((net.minecraft.server.world.ServerWorld)playHandler.getPlayer().getWorld()).getEntityById(trackerPacket.id());
+                entityToHide = ((net.minecraft.server.world.ServerWorld)playHandler.getPlayer().getEntityWorld()).getEntityById(trackerPacket.id());
             }
             
         if (entityToHide != null && PreviewManager.getInstance().isEntityHidden(playHandler.getPlayer(), entityToHide)) {

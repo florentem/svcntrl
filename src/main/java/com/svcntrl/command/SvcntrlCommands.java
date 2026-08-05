@@ -547,9 +547,9 @@ public class SvcntrlCommands {
             Project project = ProjectManager.getInstance().getActiveProject(player.getUuid());
             if (project != null) {
                 List<String> names = project.getMembers().stream()
-                        .map(uuid -> ctx.getSource().getServer().getUserCache().getByUuid(uuid))
+                        .map(uuid -> ctx.getSource().getServer().getApiServices().nameToIdCache().getByUuid(uuid))
                         .filter(java.util.Optional::isPresent)
-                        .map(opt -> opt.get().getName())
+                        .map(opt -> opt.get().name())
                         .toList();
                 return net.minecraft.command.CommandSource.suggestMatching(names, builder);
             }
@@ -744,9 +744,9 @@ public class SvcntrlCommands {
         if (sender == null) return 0;
         Project project = ProjectManager.getInstance().getActiveProject(sender.getUuid());
         if (project == null) { source.sendError(Text.translatable("svcntrl.msg.no_active_project")); return 0; }
-        java.util.Optional<com.mojang.authlib.GameProfile> profileOpt = source.getServer().getUserCache().findByName(playerName);
+        java.util.Optional<net.minecraft.server.PlayerConfigEntry> profileOpt = source.getServer().getApiServices().nameToIdCache().findByName(playerName);
         if (profileOpt.isEmpty()) { source.sendError(Text.translatable("svcntrl.msg.player_not_found")); return 0; }
-        UUID targetUuid = profileOpt.get().getId();
+        UUID targetUuid = profileOpt.get().id();
         if (add) {
             if (project.addMember(targetUuid)) {
                 ProjectManager.getInstance().saveProject(project);
@@ -1391,8 +1391,8 @@ public class SvcntrlCommands {
     }
 
     private static void resyncCommands(ServerPlayerEntity player) {
-        if (player != null && player.getServer() != null) {
-            player.getServer().getPlayerManager().sendCommandTree(player);
+        if (player != null && player.getEntityWorld().getServer() != null) {
+            player.getEntityWorld().getServer().getPlayerManager().sendCommandTree(player);
         }
     }
 }
