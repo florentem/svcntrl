@@ -1,5 +1,7 @@
 package com.svcntrl.core;
 
+
+import com.svcntrl.util.Lang;
 import com.svcntrl.SvcntrlMod;
 import com.svcntrl.data.Project;
 import com.svcntrl.data.ProjectManager;
@@ -174,7 +176,7 @@ public class SaveTask implements TaskScheduler.TickTask {
                             long now = System.currentTimeMillis();
                             if (now - lastMessageTime > 500) {
                                 float percent = (float) processed / (width * height * length) * 100f;
-                                player.sendMessage(net.minecraft.text.Text.literal(String.format("Saving Blocks: %.1f%%", percent)).formatted(net.minecraft.util.Formatting.GREEN), true);
+                                player.sendMessage(Lang.translatable("svcntrl.msg.saving_blocks_progress", String.format(java.util.Locale.US, "%.1f", percent)).formatted(net.minecraft.util.Formatting.GREEN), true);
                                 lastMessageTime = now;
                             }
                         }
@@ -190,7 +192,7 @@ public class SaveTask implements TaskScheduler.TickTask {
 
         finishedBlocks = true;
         if (player != null && !player.isDisconnected()) {
-            player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.saving_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
+            player.sendMessage(Lang.translatable("svcntrl.msg.saving_100_0").formatted(net.minecraft.util.Formatting.GREEN), true);
         }
         finishSave();
         return true;
@@ -200,7 +202,7 @@ public class SaveTask implements TaskScheduler.TickTask {
     public void onCancel(Throwable t) {
         ProjectManager.getInstance().setProjectLocked(project, false);
         if (player != null && !player.isDisconnected()) {
-            player.sendMessage(net.minecraft.text.Text.translatable("svcntrl.msg.save_failed_cancelled").formatted(net.minecraft.util.Formatting.RED), false);
+            player.sendMessage(Lang.translatable("svcntrl.msg.save_failed_cancelled").formatted(net.minecraft.util.Formatting.RED), false);
         }
         if (onError != null) {
             onError.accept(t.getMessage());
