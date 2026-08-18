@@ -1,5 +1,6 @@
 package com.svcntrl.core;
 
+import com.svcntrl.util.Lang;
 import com.svcntrl.data.Project;
 import com.svcntrl.data.ProjectManager;
 import java.util.Map;
@@ -32,7 +33,7 @@ public class PendingCreateManager {
             if (now > entry.getValue().expiryTime) {
                 ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
                 if (player != null && !player.hasDisconnected()) {
-                    player.sendSystemMessage(Component.translatable("svcntrl.msg.creation_timed_out", entry.getValue().projectName).withStyle(ChatFormatting.RED));
+                    player.sendSystemMessage(Lang.translatable("svcntrl.msg.creation_timed_out", entry.getValue().projectName).withStyle(ChatFormatting.RED));
                 }
                 return true;
             }
@@ -42,14 +43,14 @@ public class PendingCreateManager {
 
     public void startCreation(ServerPlayer player, String projectName) {
         if (ProjectManager.getInstance().getProject(projectName) != null) {
-            player.sendSystemMessage(Component.translatable("svcntrl.msg.a_project_with_this_name_alrea").withStyle(ChatFormatting.RED));
+            player.sendSystemMessage(Lang.translatable("svcntrl.msg.a_project_with_this_name_alrea").withStyle(ChatFormatting.RED));
             return;
         }
 
         pending.put(player.getUUID(), new PendingCreate(projectName, System.currentTimeMillis() + 60_000L));
-        player.sendSystemMessage(Component.translatable("svcntrl.msg.started_creation", projectName).withStyle(ChatFormatting.GREEN));
-        player.sendSystemMessage(Component.translatable("svcntrl.msg.left_right_click_blocks_to_set").withStyle(ChatFormatting.YELLOW));
-        player.sendSystemMessage(Component.translatable("svcntrl.msg.you_have_1_minute_before_this").withStyle(ChatFormatting.GRAY));
+        player.sendSystemMessage(Lang.translatable("svcntrl.msg.started_creation", projectName).withStyle(ChatFormatting.GREEN));
+        player.sendSystemMessage(Lang.translatable("svcntrl.msg.left_right_click_blocks_to_set").withStyle(ChatFormatting.YELLOW));
+        player.sendSystemMessage(Lang.translatable("svcntrl.msg.you_have_1_minute_before_this").withStyle(ChatFormatting.GRAY));
     }
 
     public boolean handleLeftClick(ServerPlayer player, BlockPos pos) {
@@ -58,7 +59,7 @@ public class PendingCreateManager {
 
         if (System.currentTimeMillis() > state.expiryTime) {
             pending.remove(player.getUUID());
-            player.sendSystemMessage(Component.translatable("svcntrl.msg.project_creation_timed_out").withStyle(ChatFormatting.RED));
+            player.sendSystemMessage(Lang.translatable("svcntrl.msg.project_creation_timed_out").withStyle(ChatFormatting.RED));
             return false;
         }
 
@@ -67,7 +68,7 @@ public class PendingCreateManager {
         }
         state.pos1 = pos;
         state.dimension = player.level().dimension().identifier().toString();
-        player.sendSystemMessage(Component.translatable("svcntrl.msg.pos1_set", pos.toShortString(), state.dimension).withStyle(ChatFormatting.GREEN));
+        player.sendSystemMessage(Lang.translatable("svcntrl.msg.pos1_set", pos.toShortString(), state.dimension).withStyle(ChatFormatting.GREEN));
         checkCompletion(player, state);
         return true;
     }
@@ -78,7 +79,7 @@ public class PendingCreateManager {
 
         if (System.currentTimeMillis() > state.expiryTime) {
             pending.remove(player.getUUID());
-            player.sendSystemMessage(Component.translatable("svcntrl.msg.project_creation_timed_out").withStyle(ChatFormatting.RED));
+            player.sendSystemMessage(Lang.translatable("svcntrl.msg.project_creation_timed_out").withStyle(ChatFormatting.RED));
             return false;
         }
 
@@ -87,7 +88,7 @@ public class PendingCreateManager {
         }
         state.pos2 = pos;
         state.dimension = player.level().dimension().identifier().toString();
-        player.sendSystemMessage(Component.translatable("svcntrl.msg.pos2_set", pos.toShortString(), state.dimension).withStyle(ChatFormatting.GREEN));
+        player.sendSystemMessage(Lang.translatable("svcntrl.msg.pos2_set", pos.toShortString(), state.dimension).withStyle(ChatFormatting.GREEN));
         checkCompletion(player, state);
         return true;
     }
@@ -100,7 +101,7 @@ public class PendingCreateManager {
             long volume = dx * dy * dz;
             int maxVol = com.svcntrl.config.SvcntrlConfig.getInstance().maxRegionVolume;
             if (volume > maxVol) {
-                player.sendSystemMessage(Component.translatable("svcntrl.msg.area_too_large", maxVol, volume)
+                player.sendSystemMessage(Lang.translatable("svcntrl.msg.area_too_large", maxVol, volume)
                         .withStyle(ChatFormatting.RED), false);
                 return;
             }
@@ -135,14 +136,14 @@ public class PendingCreateManager {
 
             if (ProjectManager.getInstance().createProject(project)) {
                 ProjectManager.getInstance().setActiveProject(player.getUUID(), project.getName());
-                player.sendSystemMessage(Component.translatable("svcntrl.msg.project_created_success", state.projectName)
+                player.sendSystemMessage(Lang.translatable("svcntrl.msg.project_created_success", state.projectName)
                         .withStyle(ChatFormatting.GREEN), false);
                 if (overlaps) {
-                    player.sendSystemMessage(Component.translatable("svcntrl.msg.warning_this_project_overlaps")
+                    player.sendSystemMessage(Lang.translatable("svcntrl.msg.warning_this_project_overlaps")
                             .withStyle(ChatFormatting.YELLOW), false);
                 }
             } else {
-                player.sendSystemMessage(Component.translatable("svcntrl.msg.failed_to_create_project_name")
+                player.sendSystemMessage(Lang.translatable("svcntrl.msg.failed_to_create_project_name")
                         .withStyle(ChatFormatting.RED));
             }
         }

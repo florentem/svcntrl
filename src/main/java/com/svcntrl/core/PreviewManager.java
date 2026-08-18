@@ -1,5 +1,6 @@
 package com.svcntrl.core;
 
+import com.svcntrl.util.Lang;
 import com.svcntrl.config.SvcntrlConfig;
 import com.svcntrl.data.Project;
 import java.util.ArrayList;
@@ -131,7 +132,7 @@ public class PreviewManager {
         }
 
         pendingPreviews.add(player.getUUID());
-        player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("svcntrl.msg.loading_snapshot_for_preview").withStyle(net.minecraft.ChatFormatting.YELLOW));
+        player.sendOverlayMessage(Lang.translatable("svcntrl.msg.loading_snapshot_for_preview").withStyle(net.minecraft.ChatFormatting.YELLOW));
         
         com.svcntrl.SvcntrlMod.supplyAsync(() -> {
             return AreaSerializer.readSnapshot(project, branchName, category, snapshotId);
@@ -139,7 +140,7 @@ public class PreviewManager {
             player.level().getServer().execute(() -> {
                 pendingPreviews.remove(player.getUUID());
                 if (root == null) {
-                    player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("svcntrl.msg.failed_to_load_snapshot_for_pr").withStyle(net.minecraft.ChatFormatting.RED));
+                    player.sendSystemMessage(Lang.translatable("svcntrl.msg.failed_to_load_snapshot_for_pr").withStyle(net.minecraft.ChatFormatting.RED));
                     return;
                 }
 
@@ -168,7 +169,7 @@ public class PreviewManager {
                 ListTag entities = root.getListOrEmpty("Entities");
                 TaskScheduler.getInstance().schedule(new StartPreviewTask(player, project.getMin(), root, entities));
                 
-                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("svcntrl.msg.previewing", branchName, category, snapshotId).withStyle(net.minecraft.ChatFormatting.AQUA));
+                player.sendSystemMessage(Lang.translatable("svcntrl.msg.previewing", branchName, category, snapshotId).withStyle(net.minecraft.ChatFormatting.AQUA));
             });
         });
     }
@@ -376,7 +377,8 @@ public class PreviewManager {
                         long now = System.currentTimeMillis();
                         if (now - lastMessageTime > 500) {
                             float percent = (float) currentIndex / totalBlocks * 100f;
-                            player.sendOverlayMessage(net.minecraft.network.chat.Component.literal(String.format("Loading Preview: %.1f%%", percent)).withStyle(net.minecraft.ChatFormatting.GREEN));
+                            String pct = String.format(java.util.Locale.US, "%.1f", percent);
+                            player.sendOverlayMessage(Lang.translatable("svcntrl.msg.loading_preview_progress", pct).withStyle(net.minecraft.ChatFormatting.GREEN));
                             lastMessageTime = now;
                         }
                         if ((System.nanoTime() - startTime) > maxTimeNs || packetsSent > 2048) {
@@ -387,7 +389,7 @@ public class PreviewManager {
                 if (currentIndex >= totalBlocks) {
                     phase = 1;
                     currentIndex = 0;
-                    player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("svcntrl.msg.loading_preview_100_0").withStyle(net.minecraft.ChatFormatting.GREEN));
+                    player.sendOverlayMessage(Lang.translatable("svcntrl.msg.loading_preview_100_0").withStyle(net.minecraft.ChatFormatting.GREEN));
                 }
                 return false;
             }
@@ -483,7 +485,8 @@ public class PreviewManager {
                         long now = System.currentTimeMillis();
                         if (now - lastMessageTime > 500) {
                             float percent = (float) currentIndex / positions.size() * 100f;
-                            player.sendOverlayMessage(net.minecraft.network.chat.Component.literal(String.format("Clearing Preview: %.1f%%", percent)).withStyle(net.minecraft.ChatFormatting.GREEN));
+                            String pct = String.format(java.util.Locale.US, "%.1f", percent);
+                            player.sendOverlayMessage(Lang.translatable("svcntrl.msg.clearing_preview_progress", pct).withStyle(net.minecraft.ChatFormatting.GREEN));
                             lastMessageTime = now;
                         }
                     }
@@ -493,7 +496,7 @@ public class PreviewManager {
                 }
             }
             if (showProgress) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("svcntrl.msg.clearing_preview_100_0").withStyle(net.minecraft.ChatFormatting.GREEN));
+                player.sendSystemMessage(Lang.translatable("svcntrl.msg.clearing_preview_100_0").withStyle(net.minecraft.ChatFormatting.GREEN));
             }
             return true;
         }
