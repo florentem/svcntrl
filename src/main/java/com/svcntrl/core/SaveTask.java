@@ -1,5 +1,6 @@
 package com.svcntrl.core;
 
+import com.svcntrl.util.Lang;
 import com.svcntrl.SvcntrlMod;
 import com.svcntrl.data.Project;
 import com.svcntrl.data.ProjectManager;
@@ -173,7 +174,8 @@ public class SaveTask implements TaskScheduler.TickTask {
                             long now = System.currentTimeMillis();
                             if (now - lastMessageTime > 500) {
                                 float percent = (float) processed / (width * height * length) * 100f;
-                                player.sendOverlayMessage(net.minecraft.network.chat.Component.literal(String.format("Saving Blocks: %.1f%%", percent)).withStyle(net.minecraft.ChatFormatting.GREEN));
+                                String pct = String.format(java.util.Locale.US, "%.1f", percent);
+                                player.sendOverlayMessage(Lang.translatable("svcntrl.msg.saving_blocks_progress", pct).withStyle(net.minecraft.ChatFormatting.GREEN));
                                 lastMessageTime = now;
                             }
                         }
@@ -189,7 +191,7 @@ public class SaveTask implements TaskScheduler.TickTask {
 
         finishedBlocks = true;
         if (player != null && !player.hasDisconnected()) {
-            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("svcntrl.msg.saving_100_0").withStyle(net.minecraft.ChatFormatting.GREEN));
+            player.sendSystemMessage(Lang.translatable("svcntrl.msg.saving_100_0").withStyle(net.minecraft.ChatFormatting.GREEN));
         }
         finishSave();
         return true;
@@ -199,7 +201,7 @@ public class SaveTask implements TaskScheduler.TickTask {
     public void onCancel(Throwable t) {
         ProjectManager.getInstance().setProjectLocked(project, false);
         if (player != null && !player.hasDisconnected()) {
-            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("svcntrl.msg.save_failed_cancelled").withStyle(net.minecraft.ChatFormatting.RED));
+            player.sendSystemMessage(Lang.translatable("svcntrl.msg.save_failed_cancelled").withStyle(net.minecraft.ChatFormatting.RED));
         }
         if (onError != null) {
             onError.accept(t.getMessage());

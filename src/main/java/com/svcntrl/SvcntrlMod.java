@@ -1,5 +1,6 @@
 package com.svcntrl;
 
+import com.svcntrl.util.Lang;
 import com.svcntrl.command.SvcntrlCommands;
 import com.svcntrl.data.ProjectManager;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -96,20 +97,20 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
             if (world.isClientSide()) return true;
             if (UXManager.getInstance().isRaycasting(player.getUUID())) {
-                player.sendOverlayMessage(Component.translatable("svcntrl.msg.you_cannot_break_blocks_in_sel").withStyle(ChatFormatting.RED));
+                player.sendOverlayMessage(Lang.translatable("svcntrl.msg.you_cannot_break_blocks_in_sel").withStyle(ChatFormatting.RED));
                 return false;
             }
             if (PreviewManager.getInstance().hasPreview(player.getUUID())) {
-                player.sendOverlayMessage(Component.translatable("svcntrl.msg.you_cannot_break_blocks_while").withStyle(ChatFormatting.RED));
+                player.sendOverlayMessage(Lang.translatable("svcntrl.msg.you_cannot_break_blocks_while").withStyle(ChatFormatting.RED));
                 PreviewManager.getInstance().resendBlock((net.minecraft.server.level.ServerPlayer) player, pos);
                 return false;
             }
             if (isPosPreviewed(world, pos)) {
-                player.sendOverlayMessage(Component.translatable("svcntrl.msg.cannot_modify_area_a_preview_i").withStyle(ChatFormatting.RED));
+                player.sendOverlayMessage(Lang.translatable("svcntrl.msg.cannot_modify_area_a_preview_i").withStyle(ChatFormatting.RED));
                 return false;
             }
             if (isPosLocked(world, pos)) {
-                player.sendOverlayMessage(Component.translatable("svcntrl.msg.cannot_modify_area_a_save_rest").withStyle(ChatFormatting.RED));
+                player.sendOverlayMessage(Lang.translatable("svcntrl.msg.cannot_modify_area_a_save_rest").withStyle(ChatFormatting.RED));
                 return false;
             }
             return true;
@@ -132,17 +133,17 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
             }
 
             if (PreviewManager.getInstance().hasPreview(player.getUUID())) {
-                player.sendOverlayMessage(Component.translatable("svcntrl.msg.you_cannot_interact_while_prev").withStyle(ChatFormatting.RED));
+                player.sendOverlayMessage(Lang.translatable("svcntrl.msg.you_cannot_interact_while_prev").withStyle(ChatFormatting.RED));
                 return InteractionResult.FAIL;
             }
             
             if (hitResult instanceof net.minecraft.world.phys.BlockHitResult blockHit) {
                 if (isPosPreviewed(world, blockHit.getBlockPos())) {
-                    player.sendOverlayMessage(Component.translatable("svcntrl.msg.cannot_modify_area_a_preview_i").withStyle(ChatFormatting.RED));
+                    player.sendOverlayMessage(Lang.translatable("svcntrl.msg.cannot_modify_area_a_preview_i").withStyle(ChatFormatting.RED));
                     return InteractionResult.FAIL;
                 }
                 if (isPosLocked(world, blockHit.getBlockPos())) {
-                    player.sendSystemMessage(Component.translatable("svcntrl.msg.cannot_modify_area_a_save_rest").withStyle(ChatFormatting.RED));
+                    player.sendSystemMessage(Lang.translatable("svcntrl.msg.cannot_modify_area_a_save_rest").withStyle(ChatFormatting.RED));
                     return InteractionResult.FAIL;
                 }
             }
@@ -181,13 +182,13 @@ public class SvcntrlMod implements net.fabricmc.api.ModInitializer {
             com.svcntrl.data.Project project = UXManager.getInstance().getProjectLookingAt((net.minecraft.server.level.ServerPlayer) player);
             if (project != null) {
                 if (!project.isMember(player.getUUID()) && !player.level().getServer().getPlayerList().isOp(new net.minecraft.server.players.NameAndId(player.getGameProfile()))) {
-                    player.sendSystemMessage(Component.translatable("svcntrl.msg.you_don_t_have_access_to_this").withStyle(ChatFormatting.RED));
+                    player.sendSystemMessage(Lang.translatable("svcntrl.msg.you_don_t_have_access_to_this").withStyle(ChatFormatting.RED));
                 } else {
                     ProjectManager.getInstance().setActiveProject(player.getUUID(), project.getName());
-                    player.sendSystemMessage(Component.translatable("svcntrl.msg.selected_project").append(Component.literal(project.getName()).withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)));
+                    player.sendSystemMessage(Lang.translatable("svcntrl.msg.selected_project").append(Component.literal(project.getName()).withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)));
                 }
             } else {
-                player.sendSystemMessage(Component.translatable("svcntrl.msg.raycast_selection_cancelled_no").withStyle(ChatFormatting.RED));
+                player.sendSystemMessage(Lang.translatable("svcntrl.msg.raycast_selection_cancelled_no").withStyle(ChatFormatting.RED));
             }
             UXManager.getInstance().setRaycasting(player.getUUID(), false);
             return true;

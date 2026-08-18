@@ -1,5 +1,6 @@
 package com.svcntrl.core;
 
+import com.svcntrl.util.Lang;
 import com.svcntrl.data.Project;
 import com.svcntrl.data.ProjectManager;
 import com.svcntrl.config.SvcntrlConfig;
@@ -117,7 +118,7 @@ public class UXManager {
         if (tickCounter % 10 == 0) {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 if (PreviewManager.getInstance().hasPreview(player.getUUID())) {
-                    player.sendOverlayMessage(Component.translatable("svcntrl.msg.you_are_in_preview_mode_type_s").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
+                    player.sendOverlayMessage(Lang.translatable("svcntrl.msg.you_are_in_preview_mode_type_s").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
                 }
             }
         }
@@ -128,9 +129,9 @@ public class UXManager {
                 if (raycastPlayers.contains(player.getUUID())) {
                     Project lookedAt = getProjectLookingAt(player);
                     if (lookedAt != null) {
-                        player.sendOverlayMessage(Component.translatable("svcntrl.msg.looking_at").withStyle(ChatFormatting.GRAY).append(Component.literal(lookedAt.getName()).withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)).append(Component.translatable("svcntrl.msg.click_to_select").withStyle(ChatFormatting.YELLOW)));
+                        player.sendOverlayMessage(Lang.translatable("svcntrl.msg.looking_at").withStyle(ChatFormatting.GRAY).append(Component.literal(lookedAt.getName()).withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)).append(Lang.translatable("svcntrl.msg.click_to_select").withStyle(ChatFormatting.YELLOW)));
                     } else {
-                        player.sendSystemMessage(Component.translatable("svcntrl.msg.looking_at").withStyle(ChatFormatting.GRAY).append(Component.translatable("svcntrl.msg.none").withStyle(ChatFormatting.DARK_GRAY)));
+                        player.sendSystemMessage(Lang.translatable("svcntrl.msg.looking_at").withStyle(ChatFormatting.GRAY).append(Lang.translatable("svcntrl.msg.none").withStyle(ChatFormatting.DARK_GRAY)));
                     }
                 }
             }
