@@ -30,6 +30,33 @@ public class SvcntrlPlugin extends JavaPlugin {
         if (cmd != null) {
             cmd.setExecutor(commands);
             cmd.setTabCompleter(commands);
+        } else {
+            try {
+                java.lang.reflect.Method getCommandMap = getServer().getClass().getMethod("getCommandMap");
+                org.bukkit.command.CommandMap commandMap = (org.bukkit.command.CommandMap) getCommandMap.invoke(getServer());
+                org.bukkit.command.Command fallbackCmd = new org.bukkit.command.Command("svcntrl") {
+                    {
+                        setAliases(java.util.List.of("sc"));
+                        setDescription("Server-side version control for Minecraft builds");
+                        setUsage("/svcntrl");
+                    }
+                    @Override
+                    public boolean execute(org.bukkit.command.CommandSender sender, String label, String[] args) {
+                        return commands.onCommand(sender, this, label, args);
+                    }
+                    @Override
+                    public java.util.List<String> tabComplete(org.bukkit.command.CommandSender sender, String alias, String[] args) {
+                        return commands.onTabComplete(sender, this, alias, args);
+                    }
+                    @Override
+                    public boolean testPermissionSilent(org.bukkit.command.CommandSender target) {
+                        return true;
+                    }
+                };
+                commandMap.register("svcntrl", fallbackCmd);
+            } catch (Exception e) {
+                getLogger().severe("[svcntrl] Failed to register command in CommandMap: " + e.getMessage());
+            }
         }
 
         getServer().getPluginManager().registerEvents(new PaperListener(), this);

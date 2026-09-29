@@ -26,6 +26,23 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MM-dd HH:mm");
 
+    public static boolean hasPerm(CommandSender sender, String node) {
+        if (sender == null || sender.isOp() || sender.hasPermission("svcntrl.admin")) {
+            return true;
+        }
+        return sender.hasPermission(node)
+                || sender.hasPermission("svcntrl.command")
+                || sender.hasPermission("svcntrl");
+    }
+
+    private boolean checkPerm(Player player, String node) {
+        if (hasPerm(player, node)) {
+            return true;
+        }
+        player.sendMessage(Component.text(Lang.get("svcntrl.msg.you_don_t_have_permission_to"), NamedTextColor.RED));
+        return false;
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
@@ -36,7 +53,7 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
         String sub = args[0].toLowerCase(Locale.ROOT);
 
         if (sub.equals("reload")) {
-            if (!sender.hasPermission("svcntrl.command.reload") && !sender.isOp()) {
+            if (!hasPerm(sender, "svcntrl.command.reload") && !sender.isOp()) {
                 sender.sendMessage(Component.text(Lang.get("svcntrl.msg.you_don_t_have_permission_to"), NamedTextColor.RED));
                 return true;
             }
@@ -53,13 +70,27 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
         switch (sub) {
             case "project" -> handleProject(player, args);
             case "branch" -> handleBranch(player, args);
-            case "outline" -> handleOutline(player);
-            case "save" -> handleSave(player, args);
-            case "restore" -> handleRestore(player, args);
-            case "log" -> handleLog(player, args);
-            case "preview" -> handlePreview(player, args);
-            case "pos1" -> handlePos1(player);
-            case "pos2" -> handlePos2(player);
+            case "outline" -> {
+                if (checkPerm(player, "svcntrl.command.outline")) handleOutline(player);
+            }
+            case "save" -> {
+                if (checkPerm(player, "svcntrl.command.save")) handleSave(player, args);
+            }
+            case "restore" -> {
+                if (checkPerm(player, "svcntrl.command.restore")) handleRestore(player, args);
+            }
+            case "log" -> {
+                if (checkPerm(player, "svcntrl.command.log")) handleLog(player, args);
+            }
+            case "preview" -> {
+                if (checkPerm(player, "svcntrl.command.preview")) handlePreview(player, args);
+            }
+            case "pos1" -> {
+                if (checkPerm(player, "svcntrl.command.pos")) handlePos1(player);
+            }
+            case "pos2" -> {
+                if (checkPerm(player, "svcntrl.command.pos")) handlePos2(player);
+            }
             default -> sendHelp(player);
         }
         return true;
@@ -91,6 +122,7 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
         String action = args[1].toLowerCase(Locale.ROOT);
         switch (action) {
             case "create" -> {
+                if (!checkPerm(player, "svcntrl.command.project.create")) return;
                 if (args.length < 3) {
                     player.sendMessage(Component.text(Lang.get("svcntrl.msg.specify_project_name"), NamedTextColor.RED));
                     return;
@@ -105,6 +137,7 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
                 player.sendMessage(Component.text(Lang.get("svcntrl.msg.left_right_click_blocks_to_set"), NamedTextColor.YELLOW));
             }
             case "list" -> {
+                if (!checkPerm(player, "svcntrl.command.project.list")) return;
                 Collection<Project> projects = ProjectManager.getInstance().getProjectsForPlayer(player.getUniqueId());
                 if (projects.isEmpty()) {
                     player.sendMessage(Component.text(Lang.get("svcntrl.msg.you_don_t_have_any_projects"), NamedTextColor.GRAY));
@@ -116,6 +149,7 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
                 }
             }
             case "select" -> {
+                if (!checkPerm(player, "svcntrl.command.project.select")) return;
                 if (args.length < 3) {
                     player.sendMessage(Component.text(Lang.get("svcntrl.msg.specify_project_name"), NamedTextColor.RED));
                     return;
@@ -130,6 +164,7 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
                         .append(Component.text(p.getName(), NamedTextColor.AQUA, TextDecoration.BOLD)));
             }
             case "tp" -> {
+                if (!checkPerm(player, "svcntrl.command.project.tp")) return;
                 if (args.length < 3) {
                     player.sendMessage(Component.text(Lang.get("svcntrl.msg.specify_project_name"), NamedTextColor.RED));
                     return;
@@ -150,10 +185,12 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
                 player.sendMessage(Component.text(Lang.get("svcntrl.msg.teleported_to_project", p.getName()), NamedTextColor.GREEN));
             }
             case "raycast" -> {
+                if (!checkPerm(player, "svcntrl.command.project.raycast")) return;
                 PaperUXManager.getInstance().setRaycasting(player.getUniqueId(), true);
                 player.sendMessage(Component.text(Lang.get("svcntrl.msg.raycast_selection_mode_enabled"), NamedTextColor.GREEN));
             }
             case "remove" -> {
+                if (!checkPerm(player, "svcntrl.command.project.remove")) return;
                 if (args.length < 3) {
                     player.sendMessage(Component.text(Lang.get("svcntrl.msg.specify_project_name"), NamedTextColor.RED));
                     return;
@@ -173,6 +210,7 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
                 player.sendMessage(Component.text(Lang.get("svcntrl.msg.project_deleted_success", name), NamedTextColor.GREEN));
             }
             case "trust" -> {
+                if (!checkPerm(player, "svcntrl.command.project.trust")) return;
                 if (args.length < 3) {
                     player.sendMessage(Component.text("Specify player name", NamedTextColor.RED));
                     return;
@@ -192,6 +230,7 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
                 player.sendMessage(Component.text(Lang.get("svcntrl.msg.trusted_player", target.getName(), p.getName()), NamedTextColor.GREEN));
             }
             case "untrust" -> {
+                if (!checkPerm(player, "svcntrl.command.project.untrust")) return;
                 if (args.length < 3) {
                     player.sendMessage(Component.text("Specify player name", NamedTextColor.RED));
                     return;
@@ -226,6 +265,7 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
         String action = args[1].toLowerCase(Locale.ROOT);
         switch (action) {
             case "create" -> {
+                if (!checkPerm(player, "svcntrl.command.branch.create")) return;
                 if (args.length < 3) {
                     player.sendMessage(Component.text(Lang.get("svcntrl.msg.specify_branch_name"), NamedTextColor.RED));
                     return;
@@ -240,6 +280,7 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
                 player.sendMessage(Component.text(Lang.get("svcntrl.msg.branch_created", name), NamedTextColor.GREEN));
             }
             case "checkout" -> {
+                if (!checkPerm(player, "svcntrl.command.branch.checkout")) return;
                 if (args.length < 3) {
                     player.sendMessage(Component.text(Lang.get("svcntrl.msg.specify_branch_name"), NamedTextColor.RED));
                     return;
@@ -254,6 +295,7 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
                 player.sendMessage(Component.text(Lang.get("svcntrl.msg.switched_to_branch", name), NamedTextColor.GREEN));
             }
             case "list" -> {
+                if (!checkPerm(player, "svcntrl.command.branch.list")) return;
                 player.sendMessage(Component.text(Lang.get("svcntrl.msg.branches_for_project") + p.getName(), NamedTextColor.GOLD, TextDecoration.BOLD));
                 for (Project.Branch b : p.getBranches()) {
                     String prefix = b.getName().equalsIgnoreCase(p.getCurrentBranchName()) ? "* " : "  ";
@@ -261,6 +303,7 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
                 }
             }
             case "delete" -> {
+                if (!checkPerm(player, "svcntrl.command.branch.delete")) return;
                 if (args.length < 3) {
                     player.sendMessage(Component.text(Lang.get("svcntrl.msg.specify_branch_name"), NamedTextColor.RED));
                     return;
@@ -464,21 +507,48 @@ public class PaperCommands implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return Arrays.asList("project", "branch", "save", "restore", "log", "preview", "outline", "reload", "help")
-                    .stream().filter(s -> s.startsWith(args[0].toLowerCase(Locale.ROOT))).collect(Collectors.toList());
+            List<String> list = new ArrayList<>();
+            if (hasPerm(sender, "svcntrl.command.project") || hasPerm(sender, "svcntrl.command.project.list") || hasPerm(sender, "svcntrl.command.project.create")) list.add("project");
+            if (hasPerm(sender, "svcntrl.command.branch") || hasPerm(sender, "svcntrl.command.branch.list") || hasPerm(sender, "svcntrl.command.branch.create")) list.add("branch");
+            if (hasPerm(sender, "svcntrl.command.save")) list.add("save");
+            if (hasPerm(sender, "svcntrl.command.restore")) list.add("restore");
+            if (hasPerm(sender, "svcntrl.command.log")) list.add("log");
+            if (hasPerm(sender, "svcntrl.command.preview")) list.add("preview");
+            if (hasPerm(sender, "svcntrl.command.outline")) list.add("outline");
+            if (hasPerm(sender, "svcntrl.command.pos")) {
+                list.add("pos1");
+                list.add("pos2");
+            }
+            if (hasPerm(sender, "svcntrl.command.reload") || sender.isOp()) list.add("reload");
+            list.add("help");
+            return list.stream().filter(s -> s.startsWith(args[0].toLowerCase(Locale.ROOT))).collect(Collectors.toList());
         }
         if (args.length == 2) {
             if (args[0].equalsIgnoreCase("project")) {
-                return Arrays.asList("create", "list", "select", "tp", "raycast", "remove", "trust", "untrust")
-                        .stream().filter(s -> s.startsWith(args[1].toLowerCase(Locale.ROOT))).collect(Collectors.toList());
+                List<String> list = new ArrayList<>();
+                if (hasPerm(sender, "svcntrl.command.project.create")) list.add("create");
+                if (hasPerm(sender, "svcntrl.command.project.list")) list.add("list");
+                if (hasPerm(sender, "svcntrl.command.project.select")) list.add("select");
+                if (hasPerm(sender, "svcntrl.command.project.tp")) list.add("tp");
+                if (hasPerm(sender, "svcntrl.command.project.raycast")) list.add("raycast");
+                if (hasPerm(sender, "svcntrl.command.project.remove")) list.add("remove");
+                if (hasPerm(sender, "svcntrl.command.project.trust")) list.add("trust");
+                if (hasPerm(sender, "svcntrl.command.project.untrust")) list.add("untrust");
+                return list.stream().filter(s -> s.startsWith(args[1].toLowerCase(Locale.ROOT))).collect(Collectors.toList());
             }
             if (args[0].equalsIgnoreCase("branch")) {
-                return Arrays.asList("create", "checkout", "list", "delete")
-                        .stream().filter(s -> s.startsWith(args[1].toLowerCase(Locale.ROOT))).collect(Collectors.toList());
+                List<String> list = new ArrayList<>();
+                if (hasPerm(sender, "svcntrl.command.branch.create")) list.add("create");
+                if (hasPerm(sender, "svcntrl.command.branch.checkout")) list.add("checkout");
+                if (hasPerm(sender, "svcntrl.command.branch.list")) list.add("list");
+                if (hasPerm(sender, "svcntrl.command.branch.delete")) list.add("delete");
+                return list.stream().filter(s -> s.startsWith(args[1].toLowerCase(Locale.ROOT))).collect(Collectors.toList());
             }
             if (args[0].equalsIgnoreCase("preview")) {
-                return Arrays.asList("start", "stop")
-                        .stream().filter(s -> s.startsWith(args[1].toLowerCase(Locale.ROOT))).collect(Collectors.toList());
+                if (hasPerm(sender, "svcntrl.command.preview")) {
+                    return Arrays.asList("start", "stop")
+                            .stream().filter(s -> s.startsWith(args[1].toLowerCase(Locale.ROOT))).collect(Collectors.toList());
+                }
             }
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("project") && (args[1].equalsIgnoreCase("select") || args[1].equalsIgnoreCase("tp") || args[1].equalsIgnoreCase("remove"))) {
