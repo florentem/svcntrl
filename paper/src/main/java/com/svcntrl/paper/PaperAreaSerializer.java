@@ -41,7 +41,7 @@ public class PaperAreaSerializer {
         ProjectManager.runAsync(() -> {
             try {
                 SaveTask task = new SaveTask(player, world, project, branchName, category, snapshotId, onSuccess, onError);
-                Bukkit.getScheduler().runTask(Bukkit.getPluginManager().getPlugin("svcntrl"), () -> {
+                Bukkit.getScheduler().runTask(SvcntrlPlugin.getInstance(), () -> {
                     TaskScheduler.getInstance().schedule(task);
                 });
             } catch (Throwable t) {
@@ -62,7 +62,7 @@ public class PaperAreaSerializer {
         ProjectManager.runAsync(() -> {
             try {
                 NbtCompound root = NbtIo.readCompressed(filePath);
-                Bukkit.getScheduler().runTask(Bukkit.getPluginManager().getPlugin("svcntrl"), () -> {
+                Bukkit.getScheduler().runTask(SvcntrlPlugin.getInstance(), () -> {
                     try {
                         TaskScheduler.getInstance().schedule(new RestoreTask(player, world, project, root, onComplete, onFail).setExcludeIntersections(excludeIntersections));
                     } catch (Throwable t) {
@@ -274,7 +274,7 @@ public class PaperAreaSerializer {
                     Files.move(tempPath, filePath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
                     LOGGER.info("[svcntrl] Saved V2 snapshot {} ({}) for project '{}'", snapshotId, category, project.getName());
 
-                    Bukkit.getScheduler().runTask(Bukkit.getPluginManager().getPlugin("svcntrl"), () -> {
+                    Bukkit.getScheduler().runTask(SvcntrlPlugin.getInstance(), () -> {
                         try {
                             if (onSuccess != null) onSuccess.run();
                         } finally {
@@ -283,7 +283,7 @@ public class PaperAreaSerializer {
                     });
                 } catch (Throwable t) {
                     LOGGER.error("[svcntrl] Error saving snapshot", t);
-                    Bukkit.getScheduler().runTask(Bukkit.getPluginManager().getPlugin("svcntrl"), () -> {
+                    Bukkit.getScheduler().runTask(SvcntrlPlugin.getInstance(), () -> {
                         try {
                             if (onError != null) onError.accept(t.getMessage());
                         } finally {
