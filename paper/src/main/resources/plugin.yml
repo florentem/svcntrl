@@ -7,12 +7,83 @@ description: Server-side version control for Minecraft builds
 commands:
   svcntrl:
     description: Server version control command
-    permission: svcntrl.use
     aliases: [sc]
 permissions:
   svcntrl.admin:
-    description: Full administrative access
+    description: Full administrative access to all svcntrl projects
     default: op
+  svcntrl:
+    description: Base access to svcntrl
+    default: true
   svcntrl.use:
     description: Basic svcntrl usage
     default: true
+  svcntrl.command:
+    description: General access to svcntrl commands
+    default: true
+  svcntrl.command.save:
+    description: Create snapshots
+    default: true
+  svcntrl.command.restore:
+    description: Restore snapshots
+    default: true
+  svcntrl.command.project:
+    description: Project commands
+    default: true
+  svcntrl.command.project.create:
+    description: Create projects
+    default: true
+  svcntrl.command.project.list:
+    description: List projects
+    default: true
+  svcntrl.command.project.select:
+    description: Select active project
+    default: true
+  svcntrl.command.project.tp:
+    description: Teleport to project
+    default: true
+  svcntrl.command.project.raycast:
+    description: Select project via raycast
+    default: true
+  svcntrl.command.project.remove:
+    description: Remove project
+    default: true
+  svcntrl.command.project.trust:
+    description: Trust player to project
+    default: true
+  svcntrl.command.project.untrust:
+    description: Untrust player from project
+    default: true
+  svcntrl.command.branch:
+    description: Branch commands
+    default: true
+  svcntrl.command.branch.create:
+    description: Create branches
+    default: true
+  svcntrl.command.branch.checkout:
+    description: Switch branches
+    default: true
+  svcntrl.command.branch.list:
+    description: List branches
+    default: true
+  svcntrl.command.branch.delete:
+    description: Delete branches
+    default: true
+  svcntrl.command.log:
+    description: View snapshot history
+    default: true
+  svcntrl.command.outline:
+    description: Toggle particle outline
+    default: true
+  svcntrl.command.preview:
+    description: Preview snapshots
+    default: true
+  svcntrl.command.export:
+    description: Export snapshots
+    default: true
+  svcntrl.command.pos:
+    description: Selection positions
+    default: true
+  svcntrl.command.reload:
+    description: Reload svcntrl configuration
+    default: op
