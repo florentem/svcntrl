@@ -1,0 +1,18 @@
+name: svcntrl
+version: '1.1.21'
+main: com.svcntrl.paper.SvcntrlPlugin
+api-version: '1.21'
+author: florentem
+description: Server-side version control for Minecraft builds
+commands:
+  svcntrl:
+    description: Server version control command
+    permission: svcntrl.use
+    aliases: [sc]
+permissions:
+  svcntrl.admin:
+    description: Full administrative access
+    default: op
+  svcntrl.use:
+    description: Basic svcntrl usage
+    default: true
