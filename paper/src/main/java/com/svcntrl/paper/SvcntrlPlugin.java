@@ -9,9 +9,15 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.nio.file.Path;
 
 public class SvcntrlPlugin extends JavaPlugin {
+    private static SvcntrlPlugin instance;
+
+    public static SvcntrlPlugin getInstance() {
+        return instance;
+    }
 
     @Override
     public void onEnable() {
+        instance = this;
         getLogger().info("[svcntrl] Initializing Svcntrl Paper plugin...");
 
         Path dataFolder = getDataFolder().toPath();
